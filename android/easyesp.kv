@@ -1,0 +1,122 @@
+<DashboardScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(10)
+        spacing: dp(6)
+
+        Label:
+            text: "EasyESP"
+            size_hint_y: None
+            height: dp(44)
+            font_size: dp(20)
+            bold: True
+
+        Label:
+            id: status_label
+            text: root.status_text
+            size_hint_y: None
+            height: dp(24)
+            font_size: dp(13)
+
+        ScrollView:
+            BoxLayout:
+                id: device_list
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(4)
+
+
+<FlashScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12)
+        spacing: dp(10)
+
+        Label:
+            text: "USB Flash"
+            size_hint_y: None
+            height: dp(44)
+            font_size: dp(20)
+            bold: True
+
+        Label:
+            id: status_label
+            text: root.status
+            size_hint_y: None
+            height: dp(30)
+
+        ProgressBar:
+            value: root.progress
+            size_hint_y: None
+            height: dp(20)
+            max: 100
+
+        Spinner:
+            id: board_spinner
+            text: root.board
+            size_hint_y: None
+            height: dp(44)
+            values: ["ESP32 Dev Module", "ESP32-S3 DevKitC", "ESP32-C3 DevKit", "ESP32-S2 Saola"]
+            on_text: root.board = self.text
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(12)
+
+            Button:
+                text: "Start Flash"
+                on_press: root.start_flash()
+                background_color: 0.2, 0.6, 0.2, 1
+
+            Button:
+                text: "Back"
+                on_press: root.back()
+
+
+<OtaScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12)
+        spacing: dp(10)
+
+        Label:
+            text: "OTA Update"
+            size_hint_y: None
+            height: dp(44)
+            font_size: dp(20)
+            bold: True
+
+        Label:
+            id: device_label
+            text: root.device_label
+            size_hint_y: None
+            height: dp(30)
+            font_size: dp(15)
+
+        Label:
+            id: status_label
+            text: root.status
+            size_hint_y: None
+            height: dp(30)
+
+        ProgressBar:
+            value: root.progress
+            size_hint_y: None
+            height: dp(20)
+            max: 100
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(12)
+
+            Button:
+                text: "Start OTA"
+                on_press: root.start_ota()
+                background_color: 0.2, 0.4, 0.8, 1
+
+            Button:
+                text: "Back"
+                on_press: root.back()
