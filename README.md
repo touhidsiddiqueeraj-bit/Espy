@@ -8,23 +8,6 @@
 
 EasyESP is a cross-platform desktop application (with an Android companion app) that enables **one-click wireless firmware updates for ESP32 microcontrollers over Wi-Fi (OTA)**. It also handles first-time USB setup. Drop an Arduino `.ino` sketch file onto the app, it compiles it via `arduino-cli`, and uploads the binary to the ESP32 over the network.
 
----
-
-## Screenshots
-
-| Easy Mode | Device Discovery | Flashing |
-|:---:|:---:|:---:|
-| ![Easy Mode](screenshots/02-easy-mode.png) | ![Device Discovery](screenshots/03-device-discovery.png) | ![Flashing Progress](screenshots/04-flashing-progress.png) |
-
-| Advanced Mode | Serial Monitor | Partition Editor |
-|:---:|:---:|:---:|
-| ![Advanced Mode](screenshots/06-advanced-mode.png) | ![Serial Monitor](screenshots/07-serial-monitor.png) | ![Partition Editor](screenshots/08-partition-editor.png) |
-
-| Setup Wizard | Batch Flash | Main Window |
-|:---:|:---:|:---:|
-| ![Setup Wizard](screenshots/09-setup-wizard.png) | ![Batch Flash](screenshots/10-batch-flash.png) | ![Main Window](screenshots/01-main-window.png) |
-
----
 
 ## Quick Start
 
