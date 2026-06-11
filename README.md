@@ -118,7 +118,7 @@ pyinstaller easyesp.spec
 
 ## Android Companion
 
-An Android app built with Kivy is available under the `android/` directory. Build with Buildozer:
+Not tested at all. Use at your own risk. An Android app built with Kivy is available under the `android/` directory. Build with Buildozer:
 
 ```bash
 cd android
