@@ -2,6 +2,12 @@
 
 > Flash your ESP32 wirelessly in one click. Drop a `.ino` file, pick a device, done.
 
+### What's New
+
+- **Faster OTA** — Chunk size increased to 4 KB for quicker wireless uploads
+- **Smarter board detection** — Partial board name matching + fallback for unrecognized boards
+- **Cached mascot animations** — No more re-rendering Espy's moods on every resize
+
 [![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-blue.svg)](LICENSE.md)
 [![Python](https://img.shields.io/badge/python-3.10+-brightgreen)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Android-lightgrey)]()
