@@ -28,12 +28,10 @@ Plug in via USB once to flash the base firmware. After that, all updates happen 
 - **Automatic network discovery** — Finds ESP32s on your local network via mDNS and UDP heartbeat
 - **Dual mode UI** — Simple drag-and-drop Easy mode + Advanced mode with full partition/flash control
 - **Serial monitor** — USB and Wi-Fi serial monitoring with baud rate and TCP port selection
-- **Batch flashing** — Flash the same firmware to multiple devices simultaneously
 - **Crash recovery** — Automatic rollback after repeated crashes (ESP32-side watchdog)
 - **Captive portal setup** — New devices broadcast a setup Wi-Fi network for first-time configuration
 - **Partition editor** — Visual and CSV-based partition table editing
 - **Espy mascot** — Animated ESP32 mascot with multiple moods guides the experience
-- **Android companion app** — Flash and monitor ESP32s from your phone
 
 ---
 
