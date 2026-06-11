@@ -8,23 +8,6 @@
 
 EasyESP is a cross-platform desktop application (with an Android companion app) that enables **one-click wireless firmware updates for ESP32 microcontrollers over Wi-Fi (OTA)**. It also handles first-time USB setup. Drop an Arduino `.ino` sketch file onto the app, it compiles it via `arduino-cli`, and uploads the binary to the ESP32 over the network.
 
----
-
-## Screenshots
-
-| Easy Mode | Device Discovery | Flashing |
-|:---:|:---:|:---:|
-| ![Easy Mode](screenshots/02-easy-mode.png) | ![Device Discovery](screenshots/03-device-discovery.png) | ![Flashing Progress](screenshots/04-flashing-progress.png) |
-
-| Advanced Mode | Serial Monitor | Partition Editor |
-|:---:|:---:|:---:|
-| ![Advanced Mode](screenshots/06-advanced-mode.png) | ![Serial Monitor](screenshots/07-serial-monitor.png) | ![Partition Editor](screenshots/08-partition-editor.png) |
-
-| Setup Wizard | Batch Flash | Main Window |
-|:---:|:---:|:---:|
-| ![Setup Wizard](screenshots/09-setup-wizard.png) | ![Batch Flash](screenshots/10-batch-flash.png) | ![Main Window](screenshots/01-main-window.png) |
-
----
 
 ## Quick Start
 
@@ -45,12 +28,10 @@ Plug in via USB once to flash the base firmware. After that, all updates happen 
 - **Automatic network discovery** — Finds ESP32s on your local network via mDNS and UDP heartbeat
 - **Dual mode UI** — Simple drag-and-drop Easy mode + Advanced mode with full partition/flash control
 - **Serial monitor** — USB and Wi-Fi serial monitoring with baud rate and TCP port selection
-- **Batch flashing** — Flash the same firmware to multiple devices simultaneously
 - **Crash recovery** — Automatic rollback after repeated crashes (ESP32-side watchdog)
 - **Captive portal setup** — New devices broadcast a setup Wi-Fi network for first-time configuration
 - **Partition editor** — Visual and CSV-based partition table editing
 - **Espy mascot** — Animated ESP32 mascot with multiple moods guides the experience
-- **Android companion app** — Flash and monitor ESP32s from your phone
 
 ---
 
@@ -137,7 +118,7 @@ pyinstaller easyesp.spec
 
 ## Android Companion
 
-An Android app built with Kivy is available under the `android/` directory. Build with Buildozer:
+Not tested at all. Use at your own risk. An Android app built with Kivy is available under the `android/` directory. Build with Buildozer:
 
 ```bash
 cd android
