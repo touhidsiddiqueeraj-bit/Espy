@@ -63,9 +63,8 @@ class ProgressScene(QWidget):
         layout.setContentsMargins(50, 40, 50, 40)
         layout.setSpacing(14)
 
-        # Confetti
+        # Confetti (added at bottom)
         self._confetti.setVisible(False)
-        layout.addWidget(self._confetti, stretch=1)
 
         # Mascot
         self._mascot.setFixedSize(160, 180)
@@ -110,6 +109,8 @@ class ProgressScene(QWidget):
             step_label_layout.addWidget(lbl)
         layout.addLayout(step_label_layout)
 
+        layout.addStretch(1)
+
         # Status
         self._status.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._status.setStyleSheet(f"color: {C['text_muted']}; font-size: {B}px;")
@@ -147,6 +148,9 @@ class ProgressScene(QWidget):
         self._back_btn.hide()
         self._back_btn.clicked.connect(self._go_back)
         layout.addWidget(self._back_btn, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Confetti overlay
+        layout.addWidget(self._confetti, 1)
 
     def start_compile(self, board: str = ""):
         self._state = "compile"

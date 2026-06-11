@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QStackedWidget,
     QListWidget, QListWidgetItem, QFrame, QSizePolicy,
-    QMessageBox, QProgressBar, QTextEdit,
+    QMessageBox, QProgressBar,
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, pyqtSignal
 from PyQt6.QtGui import QPixmap, QIcon, QMouseEvent
@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
         self._batch_ino_path: str = ""
         self._batch_queue: list[Device] = []
         self._batch_index: int = 0
+        self._example_tmp_path: str = ""
 
         self._easy_mode = True
 
@@ -130,10 +131,11 @@ class MainWindow(QMainWindow):
         ll = QHBoxLayout(logo_area)
         ll.setContentsMargins(16, 0, 16, 0)
 
-        logo_mascot = BouncyMascot()
-        logo_mascot.set_mood("happy", 28)
-        logo_mascot.setFixedSize(28, 34)
-        ll.addWidget(logo_mascot)
+        self._logo_mascot = BouncyMascot()
+        self._logo_mascot.set_mood("happy", 28)
+        self._logo_mascot.setFixedSize(28, 34)
+        self._logo_mascot.start_bounce()
+        ll.addWidget(self._logo_mascot)
 
         logo_txt = QLabel("Espy")
         logo_txt.setStyleSheet(
@@ -287,73 +289,44 @@ class MainWindow(QMainWindow):
         header.addWidget(self._part_btn)
         layout.addLayout(header)
 
-        # ── Example code card ─────────────────────────────────
+        # ── Example code card (compact hint bar) ─────────────
         self._example_card = QFrame()
         self._example_card.setObjectName("card")
         self._example_card.setStyleSheet(
             f"QFrame#card {{ background: {C['card']}; border: 1px solid {C['border']}; border-radius: 12px; }}"
         )
         self._example_card.hide()
-        ec = QVBoxLayout(self._example_card)
-        ec.setContentsMargins(16, 12, 16, 12)
+        ec = QHBoxLayout(self._example_card)
+        ec.setContentsMargins(16, 8, 16, 8)
         ec.setSpacing(8)
 
-        ec_header = QHBoxLayout()
-        ec_header.setSpacing(8)
-
         self._example_led = BlinkingLED()
-        ec_header.addWidget(self._example_led)
+        ec.addWidget(self._example_led)
 
-        ec_title = QLabel("Blink Example")
-        ec_title.setStyleSheet(f"font-size: 15px; font-weight: 600; color: {C['text']};")
-        ec_header.addWidget(ec_title)
-        ec_header.addStretch()
-
-        self._example_toggle_btn = QPushButton("▾ Hide")
-        self._example_toggle_btn.setObjectName("ghost")
-        self._example_toggle_btn.setFixedWidth(60)
-        self._example_toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._example_toggle_btn.clicked.connect(self._toggle_example_code)
-        ec_header.addWidget(self._example_toggle_btn)
-        ec.addLayout(ec_header)
-
-        self._example_code_view = QTextEdit()
-        self._example_code_view.setReadOnly(True)
-        self._example_code_view.setMaximumHeight(200)
-        self._example_code_view.setStyleSheet(
-            f"QTextEdit {{"
-            f"  font-family: 'monospace', 'Courier New', 'Consolas';"
-            f"  font-size: 12px; color: {C['text']};"
-            f"  background: {C['bg']}; border: 1px solid {C['border']};"
-            f"  border-radius: 8px; padding: 8px;"
-            f"}}"
-        )
-        ec.addWidget(self._example_code_view)
-
-        ec_actions = QHBoxLayout()
-        ec_actions.setSpacing(8)
+        ec_title = QLabel("Blink")
+        ec_title.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {C['text']};")
+        ec.addWidget(ec_title)
 
         board_hint = QLabel()
         board_hint.setStyleSheet(f"font-size: 12px; color: {C['text_muted']};")
         self._example_board_hint = board_hint
-        ec_actions.addWidget(board_hint)
-        ec_actions.addStretch()
+        ec.addWidget(board_hint)
+        ec.addStretch()
 
-        self._flash_example_btn = QPushButton("⚡ Flash This Example")
+        self._flash_example_btn = QPushButton("⚡ Flash")
         self._flash_example_btn.setObjectName("primary")
-        self._flash_example_btn.setFixedHeight(32)
+        self._flash_example_btn.setFixedHeight(28)
         self._flash_example_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._flash_example_btn.clicked.connect(self._flash_example_code)
-        ec_actions.addWidget(self._flash_example_btn)
+        ec.addWidget(self._flash_example_btn)
 
-        self._save_example_btn = QPushButton("💾 Save .ino")
+        self._save_example_btn = QPushButton("💾 Save")
         self._save_example_btn.setObjectName("ghost")
-        self._save_example_btn.setFixedHeight(32)
+        self._save_example_btn.setFixedHeight(28)
         self._save_example_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._save_example_btn.clicked.connect(self._save_example_ino)
-        ec_actions.addWidget(self._save_example_btn)
+        ec.addWidget(self._save_example_btn)
 
-        ec.addLayout(ec_actions)
         layout.addWidget(self._example_card)
 
         # Keep a hidden QLabel so existing code that reads self._board_label.text() still works
@@ -451,24 +424,16 @@ class MainWindow(QMainWindow):
         self._update_partition_card()
         self._update_example_code()
 
-    def _toggle_example_code(self):
-        hidden = self._example_code_view.isHidden()
-        self._example_code_view.setVisible(hidden)
-        self._toggle_btn = self._example_toggle_btn
-        self._example_toggle_btn.setText("▴ Show" if hidden else "▾ Hide")
-
     def _update_example_code(self):
         board = self._board_label.text()
         if board not in BOARDS:
             self._example_card.hide()
             return
-        code = get_blink_code(board)
         pin = str(get_led_pin(board))
-        self._example_code_view.setPlainText(code)
         info = BOARDS.get(board, {})
         chip = info.get("chip", "ESP32")
         flash = info.get("flash_size", "4MB")
-        self._example_board_hint.setText(f"Built-in LED on GPIO {pin}  ·  {chip}  ·  {flash}")
+        self._example_board_hint.setText(f"💡 Blink — GPIO {pin}  ·  {chip}  ·  {flash}")
         self._example_card.show()
 
     def _flash_example_code(self):
@@ -481,6 +446,7 @@ class MainWindow(QMainWindow):
         tmp.write(code)
         tmp_path = tmp.name
         tmp.close()
+        self._example_tmp_path = tmp_path
         cfg = parse_ino(tmp_path)
         if not cfg.board or cfg.board not in BOARDS:
             cfg.board = board
@@ -652,9 +618,27 @@ class MainWindow(QMainWindow):
                     return
 
         cfg = parse_ino(path)
-        if not cfg.board or cfg.board not in BOARDS:
+        if not cfg.board:
             cfg.board = self._board_label.text()
             cfg.flash_size = BOARDS.get(cfg.board, {}).get("flash_size", "4MB")
+        elif cfg.board not in BOARDS:
+            cfg.flash_size = cfg.flash_size or "4MB"
+            if not self._easy_mode:
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Board not recognized")
+                msg.setText(f"😔 Sorry, Espy can't help with '{cfg.board}' — "
+                            f"it's not in my supported board list.")
+                msg.setInformativeText(
+                    "You can pick a compatible board or continue anyway "
+                    "(some features may not work correctly)."
+                )
+                pick = msg.addButton("Pick a board", QMessageBox.ButtonRole.ActionRole)
+                msg.addButton("Continue anyway", QMessageBox.ButtonRole.AcceptRole)
+                msg.exec()
+                if msg.clickedButton() == pick:
+                    self._open_board_picker()
+                    cfg.board = self._board_label.text()
+                    cfg.flash_size = BOARDS.get(cfg.board, {}).get("flash_size", "4MB")
 
         if self._easy_mode:
             self._easy_overlay.show_config_review(cfg, path)
@@ -669,6 +653,9 @@ class MainWindow(QMainWindow):
         self._flash_scene.start_compile(cfg.board)
         self._pending_cfg = cfg
 
+        if self._compiler:
+            self._compiler.quit()
+            self._compiler.wait()
         self._compiler = CompilerWorker(ino_path, cfg)
         self._compiler.progress.connect(self._on_compile_progress)
         self._compiler.finished.connect(lambda p: self._start_ota(p, cfg))
@@ -721,6 +708,9 @@ class MainWindow(QMainWindow):
         if self._easy_mode:
             self._easy_overlay._flash_status.setText("Uploading to ESP32...")
         ota_pass = cfg.ota_password if cfg else ""
+        if self._ota:
+            self._ota.quit()
+            self._ota.wait()
         self._ota = OtaWorker(self._selected_device, bin_path, ota_password=ota_pass)
         self._ota.progress.connect(self._flash_scene.set_progress)
         self._ota.finished.connect(self._on_ota_finished)
@@ -728,6 +718,13 @@ class MainWindow(QMainWindow):
         self._ota.start()
 
     def _start_ota(self, bin_path: str, cfg: InoConfig = None):
+        import os
+        if self._example_tmp_path:
+            try:
+                os.unlink(self._example_tmp_path)
+            except OSError:
+                pass
+            self._example_tmp_path = ""
         self._pending_bin = bin_path
         self._pending_cfg = cfg
 
@@ -743,6 +740,9 @@ class MainWindow(QMainWindow):
             self._easy_overlay._flash_status.setText("Uploading to ESP32...")
 
         ota_pass = cfg.ota_password if cfg else ""
+        if self._ota:
+            self._ota.quit()
+            self._ota.wait()
         self._ota = OtaWorker(self._selected_device, bin_path, ota_password=ota_pass)
         self._ota.progress.connect(self._flash_scene.set_progress)
         self._ota.finished.connect(self._on_ota_finished)
@@ -800,6 +800,10 @@ class MainWindow(QMainWindow):
         if not base_fw.exists():
             return
 
+        if hasattr(self, '_usb_worker') and self._usb_worker:
+            self._usb_worker.quit()
+            self._usb_worker.wait()
+
         self._usb_worker = UsbFlashWorker(
             port, str(base_fw), "My ESP32", "", ""
         )
@@ -827,6 +831,8 @@ class MainWindow(QMainWindow):
         self._stack.hide()
         self._easy_overlay.setVisible(True)
         self._easy_overlay.raise_()
+        if hasattr(self, '_logo_mascot'):
+            self._logo_mascot.stop_bounce()
 
     def _switch_to_advanced(self):
         self._easy_mode = False
@@ -835,6 +841,8 @@ class MainWindow(QMainWindow):
         self._stack.show()
         self._stack.setCurrentIndex(0)
         self._update_device_status()
+        if hasattr(self, '_logo_mascot'):
+            self._logo_mascot.start_bounce()
 
     def _toggle_mode(self):
         if self._easy_mode:
@@ -845,8 +853,22 @@ class MainWindow(QMainWindow):
     def closeEvent(self, e):
         if hasattr(self, "_discovery"):
             self._discovery.stop()
-        if hasattr(self, "_compiler") and self._compiler:
-            self._compiler.wait()
-        if hasattr(self, "_ota") and self._ota:
-            self._ota.wait()
+        if self._compiler:
+            self._compiler.quit()
+            self._compiler.wait(2000)
+        if self._ota:
+            self._ota.quit()
+            self._ota.wait(2000)
+        if hasattr(self, "_usb_worker") and self._usb_worker:
+            self._usb_worker.quit()
+            self._usb_worker.wait(2000)
+        if hasattr(self, "_serial_logger"):
+            self._serial_logger._worker.disconnect()
+            if self._serial_logger._worker.isRunning():
+                self._serial_logger._worker.quit()
+                self._serial_logger._worker.wait(2000)
+        if hasattr(self, "_batch_queue"):
+            self._batch_queue.clear()
+        if hasattr(self, "_logo_mascot"):
+            self._logo_mascot.stop_bounce()
         super().closeEvent(e)

@@ -108,7 +108,7 @@ class DropZone(QFrame):
         self._stack.addWidget(self._disabled_overlay)
 
         # Mascot overlay (hidden, shown on dragover)
-        self._mascot_overlay = QWidget(self)
+        self._mascot_overlay = QWidget()
         self._mascot_overlay.setVisible(False)
         ml = QVBoxLayout(self._mascot_overlay)
         ml.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -117,6 +117,7 @@ class DropZone(QFrame):
         self._drag_mascot.set_bounce_style("excited")
         self._drag_mascot.start_bounce()
         ml.addWidget(self._drag_mascot, alignment=Qt.AlignmentFlag.AlignBottom)
+        self._stack.addWidget(self._mascot_overlay)
 
         # Cycle hints
         self._hints = [

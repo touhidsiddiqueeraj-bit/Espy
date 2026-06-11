@@ -484,9 +484,11 @@ def parse_ino(path: str) -> InoConfig:
             cfg.board = BOARD_ALIASES[board_clean]
         else:
             for bname in BOARDS:
-                if bname.lower().startswith(board_clean.lower()[:6]):
+                if bname.lower().startswith(board_clean.lower()):
                     cfg.board = bname
                     break
+            if not cfg.board:
+                cfg.board = board_clean
     else:
         # Try to infer board from chip-specific #include directives
         for include in re.finditer(r'#include\s*[<"](.+?)[>"]', content, re.IGNORECASE):

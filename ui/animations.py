@@ -81,12 +81,19 @@ class BouncyMascot(QLabel):
         self._bounce.setEasingCurve(QEasingCurve.Type.InOutSine)
         self._bounce.valueChanged.connect(self._on_bounce)
         self._bounce_style = "idle"
-
+        self._pixmap_cache: dict[tuple[str, int], QPixmap] = {}
+        
     def set_mood(self, mood: str, size: int = 140):
-        fn = ESPY_MOODS.get(mood, ESPY_MOODS["idle"])
-        pm = QPixmap()
-        pm.loadFromData(fn(size).encode())
-        self.setPixmap(pm)
+        key = (mood, size)
+        pm = self._pixmap_cache.get(key)
+        if pm is None:
+            fn = ESPY_MOODS.get(mood, ESPY_MOODS["idle"])
+            pm = QPixmap()
+            pm.loadFromData(fn(size).encode())
+            if not pm.isNull():
+                self._pixmap_cache[key] = pm
+        if pm is not None and not pm.isNull():
+            self.setPixmap(pm)
         self._current_mood = mood
         self._current_size = size
 
@@ -203,9 +210,22 @@ class ConfettiWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._timer = QTimer(self)
-        self._timer.timeout.connect(self.update)
+        self._timer.timeout.connect(self._tick)
         self._particles: list[dict] = []
         self._running = False
+
+    def _tick(self):
+        if not self._running or not self._particles:
+            return
+        import random
+        for pt in self._particles:
+            pt["y"] += pt["speed"]
+            pt["x"] += pt["drift"]
+            pt["rotation"] += pt["rot_speed"]
+            if pt["y"] > 1.15:
+                pt["y"] = -0.08
+                pt["x"] = random.random()
+        self.update()
 
     def start(self, count: int = 60):
         import random
@@ -243,12 +263,6 @@ class ConfettiWidget(QWidget):
         w = self.width()
         h = self.height()
         for pt in self._particles:
-            pt["y"] += pt["speed"]
-            pt["x"] += pt["drift"]
-            pt["rotation"] += pt["rot_speed"]
-            if pt["y"] > 1.15:
-                pt["y"] = -0.08
-                pt["x"] = random.random()
             px = int(pt["x"] * w)
             py = int(pt["y"] * h)
             color = QColor(pt["color"])
@@ -469,7 +483,7 @@ class MascotProgressBar(QWidget):
 
 # ── Breathing dot (QVariantAnimation, no pyqtProperty) ────
 
-class BreathingDot(QLabel):
+class BreathingDot(QWidget):
     """Pulsing status dot. Green for online, gray for offline."""
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -479,13 +493,10 @@ class BreathingDot(QLabel):
         self._anim.setLoopCount(-1)
         self._anim.setEasingCurve(QEasingCurve.Type.InOutSine)
         self._anim.valueChanged.connect(self._on_opacity)
-        self.setText("●")
-        self.setStyleSheet("font-size: 14px; background: transparent;")
+        self.setFixedSize(14, 14)
 
     def set_online(self, online: bool):
         self._online = online
-        color = C['success'] if online else C['text_faint']
-        self.setStyleSheet(f"font-size: 14px; color: {color}; background: transparent;")
         self._anim.stop()
         if online:
             self._anim.setDuration(1200)
@@ -502,11 +513,19 @@ class BreathingDot(QLabel):
 
     def _on_opacity(self, v):
         self._dot_opacity = v
-        base = C['success'] if self._online else C['text_faint']
-        c = QColor(base)
-        c.setAlphaF(v)
-        name = c.name(QColor.NameFormat.HexArgb)
-        self.setStyleSheet(f"font-size: 14px; color: {name}; background: transparent;")
+        self.update()
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        color = QColor(C['success'] if self._online else C['text_faint'])
+        color.setAlphaF(self._dot_opacity)
+        p.setBrush(QBrush(color))
+        p.setPen(Qt.PenStyle.NoPen)
+        cx, cy = self.width() // 2, self.height() // 2
+        r = min(cx, cy) - 1
+        p.drawEllipse(cx - r, cy - r, r * 2, r * 2)
+        p.end()
 
 
 # ── Animated arrow (QVariantAnimation, no pyqtProperty) ───
@@ -763,17 +782,9 @@ class ProgressPulse(QProgressBar):
         self._glow.setEasingCurve(QEasingCurve.Type.InOutSine)
         self._glow.valueChanged.connect(self._on_glow)
         self._glow_val = 0.6
-
-    def start_glow(self):
-        self._glow.setStartValue(0.6)
-        self._glow.setEndValue(1.0)
-        self._glow.start()
-
-    def stop_glow(self):
-        self._glow.stop()
-
-    def _on_glow(self, v):
-        self._glow_val = v
+        self._set_stylesheet()
+    
+    def _set_stylesheet(self):
         qss = f"""
             QProgressBar {{
                 background: {C['border']};
@@ -786,3 +797,14 @@ class ProgressPulse(QProgressBar):
             }}
         """
         self.setStyleSheet(qss)
+
+    def start_glow(self):
+        self._glow.setStartValue(0.6)
+        self._glow.setEndValue(1.0)
+        self._glow.start()
+
+    def stop_glow(self):
+        self._glow.stop()
+
+    def _on_glow(self, v):
+        self._glow_val = v

@@ -71,6 +71,7 @@ class BoardCard(QFrame):
     def mousePressEvent(self, e):
         if e.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit(self._board_name)
+        super().mousePressEvent(e)
 
     def enterEvent(self, e):
         if not self._selected:

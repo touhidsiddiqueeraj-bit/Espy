@@ -332,6 +332,7 @@ class EasyOverlay(QWidget):
         # ── Blink teaser (shown when device connected) ────────
         self._blink_teaser = QFrame()
         self._blink_teaser.setObjectName("card")
+        self._blink_teaser.setFixedHeight(80)
         self._blink_teaser.hide()
         bt = QHBoxLayout(self._blink_teaser)
         bt.setContentsMargins(20, 14, 20, 14)
@@ -380,6 +381,7 @@ class EasyOverlay(QWidget):
         self._home_btn.setToolTip("Plug in your ESP32 via USB to get started")
         self._home_layout.addWidget(self._home_btn, alignment=Qt.AlignmentFlag.AlignCenter)
 
+        self._home_layout.addStretch(1)
         self._update_home_page()
         return page
 
@@ -405,6 +407,8 @@ class EasyOverlay(QWidget):
         self._pending_path = tmp_path
         self._config_confirmed = True
         self._confirming = True
+        import os
+        QTimer.singleShot(60000, lambda p=tmp_path: os.unlink(p) if os.path.exists(p) else None)
         self.set_mascot_mood("excited")
         self._flash_progress.setValue(0)
         self._flash_status.setText("Starting blink compilation...")
@@ -427,6 +431,7 @@ class EasyOverlay(QWidget):
     def _update_home_page(self):
         count = len(self._devices)
         if count == 0:
+            self._blink_led.stop()
             self._blink_teaser.hide()
             self._home_mascot.set_mood("sad", 160)
             self._home_mascot.set_bounce_style("sad")
@@ -717,6 +722,24 @@ class EasyOverlay(QWidget):
         self._config_warning_lbl.hide()
         cl.addWidget(self._config_warning_lbl)
 
+        self._config_unsupported_lbl = QLabel("")
+        self._config_unsupported_lbl.setStyleSheet(
+            f"color: {C['error']}; font-size: 14px; font-weight: 600;"
+        )
+        self._config_unsupported_lbl.setWordWrap(True)
+        self._config_unsupported_lbl.hide()
+        cl.addWidget(self._config_unsupported_lbl)
+
+        self._config_board_btn = QPushButton("Choose a different board")
+        self._config_board_btn.setObjectName("secondary")
+        self._config_board_btn.setStyleSheet(
+            f"QPushButton{{ font-size: 14px; color: {C['accent']}; background: transparent; border: 1px solid {C['accent']}; border-radius: 8px; padding: 6px 16px; }}"
+            f"QPushButton:hover{{ background: {C['card_hover']}; }}"
+        )
+        self._config_board_btn.clicked.connect(self._change_board)
+        self._config_board_btn.hide()
+        cl.addWidget(self._config_board_btn)
+
         part_edit_btn = QPushButton("Edit partition layout")
         part_edit_btn.setObjectName("ghost")
         part_edit_btn.setStyleSheet(
@@ -907,7 +930,20 @@ class EasyOverlay(QWidget):
         target = self._selected_device.friendly_label if self._selected_device else ""
         self._config_target_lbl.setText(f"🎯  Target: {target}" if target else "")
         self._config_name_lbl.setText(f"  Device: {cfg.device_name or 'My ESP32'}")
-        self._config_board_lbl.setText(f"  Board: {cfg.board}")
+        board_text = f"  Board: {cfg.board}"
+        if cfg.board and cfg.board not in BOARDS:
+            board_text += "  ⚠"
+            self._config_unsupported_lbl.setText(
+                f"😔 Sorry, Espy can't help with '{cfg.board}' directly — "
+                f"this board isn't in my supported list yet. "
+                f"Pick a compatible one below or continue anyway."
+            )
+            self._config_unsupported_lbl.show()
+            self._config_board_btn.show()
+        else:
+            self._config_unsupported_lbl.hide()
+            self._config_board_btn.hide()
+        self._config_board_lbl.setText(board_text)
         flash = cfg.flash_size_override or cfg.flash_size
         scheme = cfg.partition_scheme.replace("_", " ").title()
         if cfg.partition_csv_override:
@@ -935,9 +971,14 @@ class EasyOverlay(QWidget):
                   "library": s.library, "notes": s.notes, "color": s.color}
                  for s in cfg.wiring_suggestions],
             )
-            # Clear old detail rows
+            # Clear old detail rows including child layouts
             while self._wiring_detail.count():
                 item = self._wiring_detail.takeAt(0)
+                if item.layout():
+                    while item.layout().count():
+                        child = item.layout().takeAt(0)
+                        if child.widget():
+                            child.widget().deleteLater()
                 if item.widget():
                     item.widget().deleteLater()
             for s in cfg.wiring_suggestions:
@@ -1060,6 +1101,18 @@ class EasyOverlay(QWidget):
         self._flash_status.setText(msg)
         self._flash_status.setStyleSheet(f"color: {C['error']}; font-size: {B}px;")
 
+    # ── Board picker ───────────────────────────────────────
+
+    def _change_board(self):
+        from ui.board_picker import BoardPickerDialog
+        dlg = BoardPickerDialog(self)
+        if dlg.exec():
+            board = dlg.selected_board()
+            if board and self._pending_cfg:
+                self._pending_cfg.board = board
+                self._pending_cfg.flash_size = BOARDS.get(board, {}).get("flash_size", "4MB")
+                self.show_config_review(self._pending_cfg, self._pending_path)
+
     # ── Partition editor (shared) ───────────────────────────
 
     def _confirm_config(self):
@@ -1102,6 +1155,8 @@ class EasyOverlay(QWidget):
 
     def _on_file(self, path: str):
         self._pending_path = path
+        self._config_confirmed = False
+        self._confirming = False
         self.set_mascot_mood("wink")
         self.file_selected.emit(path)
 
