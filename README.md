@@ -4,7 +4,7 @@
 
 [![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-blue.svg)](LICENSE.md)
 [![Python](https://img.shields.io/badge/python-3.10+-brightgreen)]()
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Android-lightgrey)]()
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)]()
 
 Vibe coding has already dropped the barrier to entry — anyone can get good code now. EasyESP drops the **next barrier**: getting that code onto real hardware. No wrestling with Arduino IDE, no board configs, no digging for missing libraries, no USB cables after the first flash. Drop a `.ino` file, and EasyESP handles the rest — auto board detection, auto library resolution, wiring diagrams, and one-click OTA upload.
 
@@ -123,17 +123,6 @@ python main.py
 
 # Build with PyInstaller
 pyinstaller easyesp.spec
-```
-
----
-
-## Android Companion
-
-Not tested at all. Use at your own risk. An Android app built with Kivy is available under the `android/` directory. Build with Buildozer:
-
-```bash
-cd android
-./build_apk.sh
 ```
 
 ---
