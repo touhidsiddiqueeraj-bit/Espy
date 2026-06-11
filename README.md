@@ -1,18 +1,20 @@
 # EasyESP
 
-> Flash your ESP32 wirelessly in one click. Drop a `.ino` file, pick a device, done.
+> Getting people into IoT. Vibe coding got you the code — EasyESP gets it on the hardware.
+
+[![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-blue.svg)](LICENSE.md)
+[![Python](https://img.shields.io/badge/python-3.10+-brightgreen)]()
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Android-lightgrey)]()
+
+Vibe coding has already dropped the barrier to entry — anyone can get good code now. EasyESP drops the **next barrier**: getting that code onto real hardware. No wrestling with Arduino IDE, no board configs, no digging for missing libraries, no USB cables after the first flash. Drop a `.ino` file, and EasyESP handles the rest — auto board detection, auto library resolution, wiring diagrams, and one-click OTA upload.
+
+EasyESP is a cross-platform desktop application designed to get as many people as possible on board with IoT. It enables **one-click wireless firmware updates for ESP32 microcontrollers over Wi-Fi (OTA)** and handles first-time USB setup. Drop an Arduino `.ino` sketch file onto the app — it compiles it via `arduino-cli` and uploads the binary to the ESP32 over the network. No configuration required.
 
 ### What's New
 
 - **Faster OTA** — Chunk size increased to 4 KB for quicker wireless uploads
 - **Smarter board detection** — Partial board name matching + fallback for unrecognized boards
 - **Cached mascot animations** — No more re-rendering Espy's moods on every resize
-
-[![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-blue.svg)](LICENSE.md)
-[![Python](https://img.shields.io/badge/python-3.10+-brightgreen)]()
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Android-lightgrey)]()
-
-EasyESP is a cross-platform desktop application (with an Android companion app) that enables **one-click wireless firmware updates for ESP32 microcontrollers over Wi-Fi (OTA)**. It also handles first-time USB setup. Drop an Arduino `.ino` sketch file onto the app, it compiles it via `arduino-cli`, and uploads the binary to the ESP32 over the network.
 
 
 ## Quick Start
@@ -31,6 +33,9 @@ Plug in via USB once to flash the base firmware. After that, all updates happen 
 ## Features
 
 - **One-click OTA** — Drop any `.ino` file; EasyESP compiles it and uploads over Wi-Fi
+- **Auto board detection** — Parses your sketch and selects the right ESP32 board automatically
+- **Auto library resolver** — Detects missing libraries and fetches them on the fly
+- **Wiring diagram help** — Visual pinout diagrams for common ESP32 boards, no more guessing
 - **Automatic network discovery** — Finds ESP32s on your local network via mDNS and UDP heartbeat
 - **Dual mode UI** — Simple drag-and-drop Easy mode + Advanced mode with full partition/flash control
 - **Serial monitor** — USB and Wi-Fi serial monitoring with baud rate and TCP port selection
