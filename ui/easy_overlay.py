@@ -23,6 +23,7 @@ from models import Device, InoConfig
 from constants import BOARDS, FIRST_RUN_FILE, MODE_PREF_FILE
 from examples import get_blink_code, get_led_pin
 from parser import parse_ino
+from ui.wiring_widget import WiringDiagram
 
 
 T = EASY_MODE_TITLE_FONT
@@ -727,6 +728,26 @@ class EasyOverlay(QWidget):
 
         layout.addWidget(card)
 
+        # ── Wiring section ────────────────────────────────────────
+        self._wiring_card = QFrame()
+        self._wiring_card.setObjectName("card")
+        self._wiring_card.hide()
+        wc = QVBoxLayout(self._wiring_card)
+        wc.setContentsMargins(20, 14, 20, 14)
+        wc.setSpacing(8)
+
+        wiring_title = QLabel("🔌  Wiring — what to connect where")
+        wiring_title.setStyleSheet(f"font-weight: 700; font-size: 15px; color: {C['text']};")
+        wc.addWidget(wiring_title)
+
+        self._wiring_diagram = WiringDiagram()
+        self._wiring_diagram.setMinimumHeight(240)
+        wc.addWidget(self._wiring_diagram)
+
+        self._wiring_detail = QVBoxLayout()
+        wc.addLayout(self._wiring_detail)
+        layout.addWidget(self._wiring_card)
+
         btn = QPushButton("Looks good! Flash it →")
         btn.setObjectName("primary")
         btn.clicked.connect(self._confirm_config)
@@ -903,6 +924,52 @@ class EasyOverlay(QWidget):
             self._config_warning_lbl.show()
         else:
             self._config_warning_lbl.hide()
+
+        # Wiring section
+        if cfg.detected_pins or cfg.wiring_suggestions:
+            self._wiring_diagram.set_data(
+                cfg.board,
+                [{"gpio": p.gpio, "name": p.name, "direction": p.direction}
+                 for p in cfg.detected_pins],
+                [{"component": s.component, "pins": s.pins, "protocol": s.protocol,
+                  "library": s.library, "notes": s.notes, "color": s.color}
+                 for s in cfg.wiring_suggestions],
+            )
+            # Clear old detail rows
+            while self._wiring_detail.count():
+                item = self._wiring_detail.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+            for s in cfg.wiring_suggestions:
+                row = QHBoxLayout()
+                row.setSpacing(8)
+                dot = QLabel()
+                dot.setFixedSize(10, 10)
+                dot.setStyleSheet(
+                    f"background: {s.color}; border-radius: 5px; margin-top: 4px;"
+                )
+                row.addWidget(dot, alignment=Qt.AlignmentFlag.AlignTop)
+                text_col = QVBoxLayout()
+                text_col.setSpacing(1)
+                comp_label = QLabel(s.component)
+                comp_label.setStyleSheet(f"font-weight: 600; font-size: 13px; color: {C['text']};")
+                text_col.addWidget(comp_label)
+                for pin_name, pin_gpio in s.pins:
+                    pin_str = f"GPIO{pin_gpio}" if isinstance(pin_gpio, int) else str(pin_gpio)
+                    pin_label = QLabel(f"  {pin_name} → {pin_str}")
+                    pin_label.setStyleSheet(f"font-size: 12px; color: {C['text_muted']};")
+                    text_col.addWidget(pin_label)
+                if s.notes:
+                    notes_label = QLabel(f"  💡 {s.notes}")
+                    notes_label.setWordWrap(True)
+                    notes_label.setStyleSheet(f"font-size: 11px; color: {C['text_faint']};")
+                    text_col.addWidget(notes_label)
+                row.addLayout(text_col, 1)
+                self._wiring_detail.addLayout(row)
+            self._wiring_card.show()
+        else:
+            self._wiring_card.hide()
+
         self._stack.fade_to(self._page_index("config"))
 
     def show_setup(self):

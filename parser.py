@@ -160,6 +160,310 @@ def detect_libraries_from_source(content: str) -> list[str]:
     return found
 
 
+def resolve_gpio(raw: str) -> int:
+    raw = raw.strip()
+    if raw.startswith("D") and raw[1:].isdigit():
+        return int(raw[1:])
+    if raw.isdigit():
+        return int(raw)
+    return -1
+
+
+def detect_pins(content: str, board: str, libraries) -> tuple:
+    from models import DetectedPin, WiringSuggestion
+    from constants import BOARD_PINOUTS
+
+    pinout = BOARD_PINOUTS.get(board, {})
+    caps = pinout.get("gpio_caps", {})
+    builtin_led = pinout.get("builtin_led", 2)
+
+    detected_pins: list[DetectedPin] = []
+    suggestions: list[WiringSuggestion] = []
+    seen_gpios: set[int] = set()
+    seen_components: set[str] = set()
+
+    def add_pin(gpio: int, name: str, direction: str, function: str,
+                lib: str = "", notes: str = ""):
+        if gpio < 0 or gpio in seen_gpios:
+            return
+        seen_gpios.add(gpio)
+        pin_caps = caps.get(gpio, [])
+        if "input_only" in pin_caps and direction == "output":
+            notes += f" ⚠ GPIO{gpio} is input-only on {board}!"
+        detected_pins.append(DetectedPin(
+            name=name, gpio=gpio, direction=direction,
+            function=function, library=lib, notes=notes
+        ))
+
+    def add_suggestion(component: str, pins_list, protocol: str,
+                       lib: str = "", notes: str = "", color: str = "#4A90D9"):
+        if component in seen_components:
+            return
+        seen_components.add(component)
+        suggestions.append(WiringSuggestion(
+            component=component, pins=pins_list,
+            protocol=protocol, library=lib, notes=notes, color=color
+        ))
+
+    # 1. Basic GPIO pinMode / digitalWrite / digitalRead / analogRead / analogWrite
+    for m in re.finditer(r'pinMode\s*\(\s*(\w+|D\d+)\s*,\s*(OUTPUT|INPUT|INPUT_PULLUP)\s*\)', content):
+        gpio = resolve_gpio(m.group(1))
+        direction = "output" if m.group(2) == "OUTPUT" else "input"
+        if direction == "output":
+            add_pin(gpio, f"GPIO{gpio} (pinMode OUTPUT)", "output", "digital")
+        else:
+            add_pin(gpio, f"GPIO{gpio} (pinMode {m.group(2)})", "input", "digital")
+
+    for m in re.finditer(r'digitalWrite\s*\(\s*(\w+|D\d+)\s*,', content):
+        gpio = resolve_gpio(m.group(1))
+        add_pin(gpio, f"GPIO{gpio} (digital output)", "output", "digital")
+
+    for m in re.finditer(r'digitalRead\s*\(\s*(\w+|D\d+)\s*\)', content):
+        gpio = resolve_gpio(m.group(1))
+        add_pin(gpio, f"GPIO{gpio} (digital input)", "input", "digital")
+
+    for m in re.finditer(r'analogRead\s*\(\s*(\w+|D\d+)\s*\)', content):
+        gpio = resolve_gpio(m.group(1))
+        pin_caps = caps.get(gpio, [])
+        adc_type = next((c for c in pin_caps if c.startswith("adc")), "adc?")
+        add_pin(gpio, f"GPIO{gpio} (analog in - {adc_type})", "input", "analog")
+
+    for m in re.finditer(r'analogWrite\s*\(\s*(\w+|D\d+)\s*,', content):
+        gpio = resolve_gpio(m.group(1))
+        add_pin(gpio, f"GPIO{gpio} (PWM out)", "output", "pwm")
+
+    # 2. I2C — Wire.begin(SDA, SCL)
+    for m in re.finditer(r'Wire\.(?:begin|setPins)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)', content):
+        sda, scl = int(m.group(1)), int(m.group(2))
+        add_pin(sda, "I2C SDA", "bidirectional", "i2c", "Wire")
+        add_pin(scl, "I2C SCL", "output", "i2c", "Wire")
+        add_suggestion("I2C Bus", [("SDA", sda), ("SCL", scl)],
+                       "I2C", "Wire",
+                       "Connect SDA→SDA and SCL→SCL. Use 3.3V logic level.",
+                       "#FF6B6B")
+
+    # 3. SPI — SPI.begin(SCLK, MISO, MOSI, CS)
+    for m in re.finditer(r'SPI\.(?:begin|setPins)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)', content):
+        sclk, miso, mosi, cs = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+        add_pin(sclk, "SPI SCLK", "output", "spi", "SPI")
+        add_pin(miso, "SPI MISO", "input", "spi", "SPI")
+        add_pin(mosi, "SPI MOSI", "output", "spi", "SPI")
+        add_pin(cs, "SPI CS/SS", "output", "spi", "SPI")
+        add_suggestion("SPI Bus", [("SCLK", sclk), ("MISO", miso), ("MOSI", mosi), ("CS", cs)],
+                       "SPI", "SPI",
+                       "Connect MOSI→MOSI, MISO→MISO, SCLK→SCLK, CS→CS. Use 3.3V.",
+                       "#845EC2")
+
+    # 4. OneWire
+    for m in re.finditer(r'OneWire\s+\w+\s*\(\s*(\d+)\s*\)', content):
+        gpio = int(m.group(1))
+        add_pin(gpio, "OneWire data", "bidirectional", "onewire", "OneWire")
+        add_suggestion("OneWire Bus", [("DATA", gpio)],
+                       "OneWire", "OneWire",
+                       "Connect DATA pin. Add 4.7kΩ pull-up resistor between DATA and 3.3V.",
+                       "#FFC75F")
+
+    for m in re.finditer(r'DallasTemperature\s+\w+\s*\(', content):
+        if not any("OneWire" in s.component for s in suggestions):
+            add_suggestion("DS18B20 (DallasTemperature)", [("DATA", "OneWire pin")],
+                           "OneWire", "DallasTemperature",
+                           "Connect DS18B20 DATA to OneWire pin. Add 4.7kΩ pull-up.",
+                           "#FFC75F")
+
+    # 5. DHT sensor
+    for m in re.finditer(r'(dht|DHT)\s+\w+\s*[;=]', content):
+        pass
+
+    for m in re.finditer(r'(?:dht|DHT)\s*\.\s*begin\s*\(\s*(\d+)\s*\)', content):
+        gpio = int(m.group(1))
+        add_pin(gpio, "DHT data", "bidirectional", "onewire", "DHT sensor library")
+        add_suggestion("DHT Sensor", [("DATA", gpio)],
+                       "OneWire", "DHT sensor library",
+                       "Connect DHT VCC→3.3V, DATA→GPIO{gpio}, GND→GND. "
+                       "Add 10kΩ pull-up between DATA and 3.3V.",
+                       "#FF6B6B")
+
+    for m in re.finditer(r'#include\s*[<"]DHT\.h[>"]', content):
+        # Try to find DHT.begin() on same or next lines
+        dht_match = re.search(r'DHT\w*\s*\w*\s*[;=].*?begin\s*\(\s*(\d+)', content, re.DOTALL)
+        if dht_match:
+            gpio = int(dht_match.group(1))
+            if gpio not in seen_gpios:
+                add_pin(gpio, "DHT data", "bidirectional", "onewire", "DHT sensor library")
+                add_suggestion("DHT Sensor", [("DATA", gpio)],
+                               "OneWire", "DHT sensor library",
+                               "Connect DHT VCC→3.3V, DATA→GPIO{gpio}, GND→GND. Add 10kΩ pull-up.",
+                               "#FF6B6B")
+
+    # 6. Servo
+    for m in re.finditer(r'(\w+)\.attach\s*\(\s*(\d+)', content):
+        servo_name = m.group(1).lower()
+        gpio = int(m.group(2))
+        if "servo" in servo_name or m.group(1) in content:
+            add_pin(gpio, f"Servo signal ({m.group(1)})", "output", "pwm", "Servo/ESP32Servo")
+            add_suggestion(f"Servo ({m.group(1)})", [("Signal", gpio)],
+                           "PWM", "Servo",
+                           "Connect servo signal wire→GPIO{gpio}, VCC→5V (external), GND→GND (common).",
+                           "#4B7BEC")
+
+    # 7. LED strips — FastLED / NeoPixel
+    for m in re.finditer(r'FastLED\s*\.\s*addLeds\s*<\s*([^,>]+),\s*(\d+)', content):
+        gpio = int(m.group(2))
+        pin_caps = caps.get(gpio, [])
+        if "pwm" in pin_caps or "digital" in pin_caps:
+            add_pin(gpio, "LED strip data", "output", "digital", "FastLED")
+            add_suggestion("Addressable LEDs (FastLED)", [("DATA", gpio)],
+                           "Digital", "FastLED",
+                           f"Connect LED strip DATA→GPIO{gpio}, VCC→5V, GND→GND. "
+                           "Add 470Ω resistor on data line.",
+                           "#F9A825")
+    for m in re.finditer(r'FastLED\s*\.\s*addLeds\s*<\s*[^,>]+\s*>\s*\(\s*\w+\s*,\s*(\d+)', content):
+        gpio = int(m.group(1))
+        add_pin(gpio, "LED strip data", "output", "digital", "FastLED")
+        add_suggestion("Addressable LEDs (FastLED)", [("DATA", gpio)],
+                       "Digital", "FastLED",
+                       "Connect LED strip DATA→GPIO{gpio}, VCC→5V, GND→GND. "
+                       "Add 470Ω resistor on data line.",
+                       "#F9A825")
+
+    for m in re.finditer(r'Adafruit_NeoPixel\s+\w+\s*\(\s*\d+\s*,\s*(\d+)', content):
+        gpio = int(m.group(1))
+        add_pin(gpio, "NeoPixel data", "output", "digital", "Adafruit NeoPixel")
+        add_suggestion("NeoPixel LEDs", [("DATA", gpio)],
+                       "Digital", "Adafruit NeoPixel",
+                       "Connect NeoPixel DATA→GPIO{gpio}, VCC→5V, GND→GND. "
+                       "Add 300-500Ω resistor on data line.",
+                       "#F9A825")
+
+    # 8. I2C LCD
+    if any("LiquidCrystal I2C" in lib.name for lib in libraries):
+        default_i2c = pinout.get("default_pins", {}).get("i2c", {})
+        sda = default_i2c.get("SDA", 21)
+        scl = default_i2c.get("SCL", 22)
+        add_pin(sda, "I2C SDA (LCD)", "bidirectional", "i2c", "LiquidCrystal I2C")
+        add_pin(scl, "I2C SCL (LCD)", "output", "i2c", "LiquidCrystal I2C")
+        add_suggestion("I2C LCD Display", [("SDA", sda), ("SCL", scl)],
+                       "I2C", "LiquidCrystal I2C",
+                       f"Connect LCD SDA→GPIO{sda}, SCL→GPIO{scl}, VCC→5V, GND→GND.",
+                       "#00BFA5")
+
+    # 9. OLED displays (I2C or SPI)
+    if any("SSD1306" in lib.name for lib in libraries):
+        if re.search(r'Wire', content):
+            default_i2c = pinout.get("default_pins", {}).get("i2c", {})
+            sda = default_i2c.get("SDA", 21)
+            scl = default_i2c.get("SCL", 22)
+            add_suggestion("OLED Display (I2C)", [("SDA", sda), ("SCL", scl)],
+                           "I2C", "Adafruit SSD1306",
+                           f"Connect OLED SDA→GPIO{sda}, SCL→GPIO{scl}, VCC→3.3V, GND→GND.",
+                           "#00BFA5")
+        elif re.search(r'SPI', content):
+            default_spi = pinout.get("default_pins", {}).get("spi", {})
+            add_suggestion("OLED Display (SPI)", [
+                ("MOSI", default_spi.get("MOSI", 23)),
+                ("SCLK", default_spi.get("SCLK", 18)),
+            ], "SPI", "Adafruit SSD1306",
+                           "Connect OLED MOSI→MOSI, SCLK→SCLK, DC→any GPIO, CS→any GPIO, "
+                           "VCC→3.3V, GND→GND.",
+                           "#00BFA5")
+
+    # 10. HX711 load cell amp
+    for m in re.finditer(r'HX711\s+\w+\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)', content):
+        dout, sck = int(m.group(1)), int(m.group(2))
+        add_pin(dout, "HX711 DOUT", "input", "digital", "HX711")
+        add_pin(sck, "HX711 SCK", "output", "digital", "HX711")
+        add_suggestion("Load Cell (HX711)", [("DOUT", dout), ("SCK", sck)],
+                       "Digital", "HX711",
+                       f"Connect HX711 DOUT→GPIO{dout}, SCK→GPIO{sck}, VCC→5V, GND→GND.",
+                       "#9C27B0")
+
+    # 11. MAX6675 thermocouple
+    for m in re.finditer(r'MAX6675\s+\w+\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)', content):
+        cs, so, sck = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        add_pin(cs, "MAX6675 CS", "output", "spi", "MAX6675")
+        add_pin(so, "MAX6675 SO", "input", "spi", "MAX6675")
+        add_pin(sck, "MAX6675 SCK", "output", "spi", "MAX6675")
+        add_suggestion("Thermocouple (MAX6675)", [("CS", cs), ("SO", so), ("SCK", sck)],
+                       "SPI", "MAX6675",
+                       f"Connect MAX6675 CS→GPIO{cs}, SO→MISO, SCK→SCLK, VCC→3.3V, GND→GND.",
+                       "#FF7043")
+
+    # 12. #define / const pin constants
+    for m in re.finditer(r'#define\s+(\w*(?:PIN|pin)\w*)\s+(\d+)', content):
+        name = m.group(1)
+        gpio = int(m.group(2))
+        add_pin(gpio, f"{name}", "output", "digital")
+
+    for m in re.finditer(r'const\s+(int|uint8_t)\s+(\w*(?:PIN|pin)\w*)\s*=\s*(\d+)', content):
+        name = m.group(2)
+        gpio = int(m.group(3))
+        add_pin(gpio, f"{name}", "output", "digital")
+
+    # 13. DHT constructor with pin: DHT dht(pin, type)
+    for m in re.finditer(r'(?:DHT|dht)\s+\w+\s*\(\s*(\d+)\s*,', content):
+        gpio = int(m.group(1))
+        if gpio not in seen_gpios:
+            add_pin(gpio, "DHT data pin", "bidirectional", "onewire", "DHT sensor library")
+        add_suggestion("DHT Sensor", [("DATA", gpio)],
+                       "OneWire", "DHT sensor library",
+                       f"Connect DHT VCC→3.3V, DATA→GPIO{gpio}, GND→GND. "
+                       "Add 10kΩ pull-up between DATA and 3.3V.",
+                       "#FF6B6B")
+
+    # 14. Built-in LED check (after all pin detection)
+    if builtin_led in seen_gpios:
+        # Update existing pin name and add suggestion
+        for p in detected_pins:
+            if p.gpio == builtin_led:
+                p.name = f"Built-in LED (GPIO{builtin_led})"
+                p.notes = f"Built-in LED is connected to GPIO{builtin_led} on this board."
+        if "Built-in LED" not in str(seen_components):
+            add_suggestion("Built-in LED", [("LED", builtin_led)],
+                           "Digital", "",
+                           f"Built-in LED is on GPIO{builtin_led}. No external wiring needed.",
+                           "#FFD54F")
+    else:
+        has_led = re.search(r'pinMode\s*\(\s*' + str(builtin_led) + r'\s*,\s*OUTPUT\s*\)', content)
+        if has_led:
+            add_pin(builtin_led, f"Built-in LED (GPIO{builtin_led})", "output", "digital",
+                    notes=f"Built-in LED on GPIO{builtin_led}.")
+            add_suggestion("Built-in LED", [("LED", builtin_led)],
+                           "Digital", "",
+                           f"Built-in LED is on GPIO{builtin_led}. No external wiring needed.",
+                           "#FFD54F")
+
+    # 15. Check for unconnected detected components from #include
+    for m in re.finditer(r'#include\s*[<"](.+?)[>"]', content):
+        header = m.group(1).strip()
+        if header == "DHT.h" and "DHT" not in str(seen_components):
+            gpio = 4  # Common default
+            if gpio not in seen_gpios:
+                add_suggestion("DHT Sensor (detected)", [("DATA", f"GPIO{gpio} (default)")],
+                               "OneWire", "DHT sensor library",
+                               f"Connect DHT VCC→3.3V, DATA→GPIO{gpio}, GND→GND. "
+                               "Add 10kΩ pull-up resistor.",
+                               "#FF6B6B")
+
+    # — LED blink special case (external LED, not built-in) —
+    has_led_suggestion = any("LED" in s.component for s in suggestions)
+    if not has_led_suggestion:
+        for m in re.finditer(r'digitalWrite\s*\(\s*(\w+|D\d+)\s*,', content):
+            gpio = resolve_gpio(m.group(1))
+            if gpio > 0 and gpio != builtin_led:
+                has_existing_name = any(
+                    "LED" in p.name or p.gpio == gpio for p in detected_pins
+                )
+                if not has_existing_name:
+                    add_pin(gpio, "External LED (blink)", "output", "digital")
+                add_suggestion("External LED (Blink)", [("Anode (+)", gpio), ("Cathode (-)", "GND")],
+                               "Digital", "",
+                               f"Connect LED anode(+)→GPIO{gpio} via 220Ω resistor, cathode(-)→GND.",
+                               "#FFD54F")
+                break
+
+    return detected_pins, suggestions
+
+
 def parse_ino(path: str) -> InoConfig:
     cfg = InoConfig()
     try:
@@ -291,5 +595,11 @@ def parse_ino(path: str) -> InoConfig:
             "Deep sleep is enabled. The device will wake periodically to check for OTA updates "
             "if you keep the OTA server running before sleeping."
         )
+
+    # Pin and wiring detection
+    cfg.detected_pins, cfg.wiring_suggestions = detect_pins(content, cfg.board, cfg.libraries)
+    for s in cfg.wiring_suggestions:
+        if s.notes:
+            cfg.warnings.append(s.notes)
 
     return cfg

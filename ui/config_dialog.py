@@ -12,6 +12,7 @@ from constants import BOARDS, get_scheme_partitions, PARTITION_SCHEMES
 from ui.animations import BouncyMascot, SlideLabel
 from ui.illustrations import chip_icon, book_icon, espy_wink, BOARD_ILLUSTRATIONS
 from ui.partition_editor import PartitionEditor
+from ui.wiring_widget import WiringDiagram
 
 
 class ConfigDialog(QDialog):
@@ -246,6 +247,63 @@ class ConfigDialog(QDialog):
             wl.addWidget(wt)
             wl.addWidget(wb)
             layout.addWidget(warn)
+
+        # ── Wiring diagram ────────────────────────────────────
+        if self.cfg.detected_pins or self.cfg.wiring_suggestions:
+            wiring_card = QFrame()
+            wiring_card.setObjectName("card")
+            wc = QVBoxLayout(wiring_card)
+            wc.setContentsMargins(16, 14, 16, 14)
+            wc.setSpacing(8)
+
+            wiring_title = QLabel("🔌  Wiring — what to connect where")
+            wiring_title.setStyleSheet(f"font-weight: 700; font-size: 15px; color: {C['text']};")
+            wc.addWidget(wiring_title)
+
+            self._wiring_diagram = WiringDiagram(self.cfg.board)
+            self._wiring_diagram.set_data(
+                self.cfg.board,
+                [{"gpio": p.gpio, "name": p.name, "direction": p.direction}
+                 for p in self.cfg.detected_pins],
+                [{"component": s.component, "pins": s.pins, "protocol": s.protocol,
+                  "library": s.library, "notes": s.notes, "color": s.color}
+                 for s in self.cfg.wiring_suggestions],
+            )
+            self._wiring_diagram.setMinimumHeight(260)
+            wc.addWidget(self._wiring_diagram)
+
+            for s in self.cfg.wiring_suggestions:
+                row = QHBoxLayout()
+                row.setSpacing(8)
+                dot = QLabel()
+                dot.setFixedSize(10, 10)
+                dot.setStyleSheet(
+                    f"background: {s.color}; border-radius: 5px; margin-top: 4px;"
+                )
+                row.addWidget(dot, alignment=Qt.AlignmentFlag.AlignTop)
+
+                text_col = QVBoxLayout()
+                text_col.setSpacing(1)
+                comp_label = QLabel(s.component)
+                comp_label.setStyleSheet(f"font-weight: 600; font-size: 13px; color: {C['text']};")
+                text_col.addWidget(comp_label)
+
+                for pin_name, pin_gpio in s.pins:
+                    pin_str = f"GPIO{pin_gpio}" if isinstance(pin_gpio, int) else str(pin_gpio)
+                    pin_label = QLabel(f"  {pin_name} → {pin_str}")
+                    pin_label.setStyleSheet(f"font-size: 12px; color: {C['text_muted']};")
+                    text_col.addWidget(pin_label)
+
+                if s.notes:
+                    notes_label = QLabel(f"  💡 {s.notes}")
+                    notes_label.setWordWrap(True)
+                    notes_label.setStyleSheet(f"font-size: 11px; color: {C['text_faint']};")
+                    text_col.addWidget(notes_label)
+
+                row.addLayout(text_col, 1)
+                wc.addLayout(row)
+
+            layout.addWidget(wiring_card)
 
         # Warnings
         for w in self.cfg.warnings:

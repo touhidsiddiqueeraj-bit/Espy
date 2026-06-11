@@ -14,6 +14,27 @@ class LibraryInfo:
 
 
 @dataclass
+class DetectedPin:
+    name: str = ""
+    gpio: int = 0
+    direction: str = "output"
+    function: str = "digital"
+    library: str = ""
+    confidence: float = 1.0
+    notes: str = ""
+
+
+@dataclass
+class WiringSuggestion:
+    component: str = ""
+    pins: list[tuple[str, int]] = field(default_factory=list)
+    protocol: str = "digital"
+    library: str = ""
+    notes: str = ""
+    color: str = "#4A90D9"
+
+
+@dataclass
 class InoConfig:
     board: str = "ESP32 Dev Module"
     flash_size: str = "4MB"
@@ -32,6 +53,8 @@ class InoConfig:
     partition_scheme: str = "default_ota"
     partition_csv_override: str = ""
     flash_size_override: str = ""
+    detected_pins: list[DetectedPin] = field(default_factory=list)
+    wiring_suggestions: list[WiringSuggestion] = field(default_factory=list)
 
 
 @dataclass
