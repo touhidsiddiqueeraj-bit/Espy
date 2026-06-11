@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QStackedWidget,
     QListWidget, QListWidgetItem, QFrame, QSizePolicy,
-    QMessageBox, QProgressBar,
+    QMessageBox, QProgressBar, QTextEdit,
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, pyqtSignal
 from PyQt6.QtGui import QPixmap, QIcon, QMouseEvent
@@ -34,7 +34,8 @@ from ui.easy_overlay import EasyOverlay
 from ui.serial_logger import SerialLogger
 from ui.illustrations import espy_icon_24, espy_svg_tag
 from ui.board_picker import BoardPickerDialog
-from ui.animations import BouncyMascot, BreathingDot
+from ui.animations import BouncyMascot, BreathingDot, BlinkingLED
+from examples import get_blink_code, get_led_pin
 from workers.compiler import CompilerWorker
 from workers.ota import OtaWorker
 
@@ -84,7 +85,9 @@ class MainWindow(QMainWindow):
 
         # Main content
         self._stack = QStackedWidget()
-        self._stack.addWidget(self._make_main_page())      # 0
+        main_page = self._make_main_page()
+        self._stack.addWidget(main_page)      # 0
+        QTimer.singleShot(0, self._update_example_code)
         self._stack.addWidget(self._make_flash_page())     # 1
         self._serial_logger = SerialLogger()
         self._serial_logger.closed.connect(lambda: self._stack.setCurrentIndex(0))
@@ -284,6 +287,75 @@ class MainWindow(QMainWindow):
         header.addWidget(self._part_btn)
         layout.addLayout(header)
 
+        # ── Example code card ─────────────────────────────────
+        self._example_card = QFrame()
+        self._example_card.setObjectName("card")
+        self._example_card.setStyleSheet(
+            f"QFrame#card {{ background: {C['card']}; border: 1px solid {C['border']}; border-radius: 12px; }}"
+        )
+        self._example_card.hide()
+        ec = QVBoxLayout(self._example_card)
+        ec.setContentsMargins(16, 12, 16, 12)
+        ec.setSpacing(8)
+
+        ec_header = QHBoxLayout()
+        ec_header.setSpacing(8)
+
+        self._example_led = BlinkingLED()
+        ec_header.addWidget(self._example_led)
+
+        ec_title = QLabel("Blink Example")
+        ec_title.setStyleSheet(f"font-size: 15px; font-weight: 600; color: {C['text']};")
+        ec_header.addWidget(ec_title)
+        ec_header.addStretch()
+
+        self._example_toggle_btn = QPushButton("▾ Hide")
+        self._example_toggle_btn.setObjectName("ghost")
+        self._example_toggle_btn.setFixedWidth(60)
+        self._example_toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._example_toggle_btn.clicked.connect(self._toggle_example_code)
+        ec_header.addWidget(self._example_toggle_btn)
+        ec.addLayout(ec_header)
+
+        self._example_code_view = QTextEdit()
+        self._example_code_view.setReadOnly(True)
+        self._example_code_view.setMaximumHeight(200)
+        self._example_code_view.setStyleSheet(
+            f"QTextEdit {{"
+            f"  font-family: 'monospace', 'Courier New', 'Consolas';"
+            f"  font-size: 12px; color: {C['text']};"
+            f"  background: {C['bg']}; border: 1px solid {C['border']};"
+            f"  border-radius: 8px; padding: 8px;"
+            f"}}"
+        )
+        ec.addWidget(self._example_code_view)
+
+        ec_actions = QHBoxLayout()
+        ec_actions.setSpacing(8)
+
+        board_hint = QLabel()
+        board_hint.setStyleSheet(f"font-size: 12px; color: {C['text_muted']};")
+        self._example_board_hint = board_hint
+        ec_actions.addWidget(board_hint)
+        ec_actions.addStretch()
+
+        self._flash_example_btn = QPushButton("⚡ Flash This Example")
+        self._flash_example_btn.setObjectName("primary")
+        self._flash_example_btn.setFixedHeight(32)
+        self._flash_example_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._flash_example_btn.clicked.connect(self._flash_example_code)
+        ec_actions.addWidget(self._flash_example_btn)
+
+        self._save_example_btn = QPushButton("💾 Save .ino")
+        self._save_example_btn.setObjectName("ghost")
+        self._save_example_btn.setFixedHeight(32)
+        self._save_example_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._save_example_btn.clicked.connect(self._save_example_ino)
+        ec_actions.addWidget(self._save_example_btn)
+
+        ec.addLayout(ec_actions)
+        layout.addWidget(self._example_card)
+
         # Keep a hidden QLabel so existing code that reads self._board_label.text() still works
         self._board_label = QLabel("ESP32 Dev Module")
         self._board_label.hide()
@@ -377,6 +449,55 @@ class MainWindow(QMainWindow):
     def _on_board_changed(self):
         self._manual_board = self._board_label.text()
         self._update_partition_card()
+        self._update_example_code()
+
+    def _toggle_example_code(self):
+        hidden = self._example_code_view.isHidden()
+        self._example_code_view.setVisible(hidden)
+        self._toggle_btn = self._example_toggle_btn
+        self._example_toggle_btn.setText("▴ Show" if hidden else "▾ Hide")
+
+    def _update_example_code(self):
+        board = self._board_label.text()
+        if board not in BOARDS:
+            self._example_card.hide()
+            return
+        code = get_blink_code(board)
+        pin = str(get_led_pin(board))
+        self._example_code_view.setPlainText(code)
+        info = BOARDS.get(board, {})
+        chip = info.get("chip", "ESP32")
+        flash = info.get("flash_size", "4MB")
+        self._example_board_hint.setText(f"Built-in LED on GPIO {pin}  ·  {chip}  ·  {flash}")
+        self._example_card.show()
+
+    def _flash_example_code(self):
+        board = self._board_label.text()
+        if board not in BOARDS:
+            return
+        code = get_blink_code(board)
+        import tempfile, os
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".ino", delete=False, prefix="blink_")
+        tmp.write(code)
+        tmp_path = tmp.name
+        tmp.close()
+        cfg = parse_ino(tmp_path)
+        if not cfg.board or cfg.board not in BOARDS:
+            cfg.board = board
+            cfg.flash_size = BOARDS.get(board, {}).get("flash_size", "4MB")
+        self._start_compile(tmp_path, cfg)
+
+    def _save_example_ino(self):
+        from PyQt6.QtWidgets import QFileDialog
+        board = self._board_label.text()
+        code = get_blink_code(board)
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Blink Example", f"blink_{board.replace(' ', '_')}.ino",
+            "Arduino files (*.ino);;All files (*)"
+        )
+        if path:
+            with open(path, "w") as f:
+                f.write(code)
 
     def _open_board_picker(self):
         dlg = BoardPickerDialog(self)

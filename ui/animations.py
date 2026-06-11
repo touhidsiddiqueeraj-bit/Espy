@@ -707,6 +707,50 @@ class SlideLabel(QLabel):
         self.update()
 
 
+# ── Blinking LED (for blink example preview) ──────────────
+
+class BlinkingLED(QWidget):
+    """A small LED that blinks between on (yellow) and off (dim gray)."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._led_on = False
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._toggle)
+        self._timer.start(500)
+        self.setFixedSize(32, 32)
+
+    def _toggle(self):
+        self._led_on = not self._led_on
+        self.update()
+
+    def start(self):
+        self._timer.start(500)
+
+    def stop(self):
+        self._timer.stop()
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        cx, cy = self.width() // 2, self.height() // 2
+        r = min(cx, cy) - 2
+
+        if self._led_on:
+            color = QColor(255, 220, 50)
+            glow = QColor(255, 220, 50, 60)
+        else:
+            color = QColor(80, 80, 80)
+            glow = QColor(80, 80, 80, 20)
+
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(glow))
+        p.drawEllipse(cx - r - 3, cy - r - 3, (r + 3) * 2, (r + 3) * 2)
+
+        p.setBrush(QBrush(color))
+        p.drawEllipse(cx - r, cy - r, r * 2, r * 2)
+        p.end()
+
+
 # ── Progress pulse (QVariantAnimation, no pyqtProperty) ───
 
 class ProgressPulse(QProgressBar):

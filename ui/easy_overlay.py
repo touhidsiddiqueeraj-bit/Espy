@@ -15,11 +15,14 @@ from ui.illustrations import (
 )
 from ui.animations import (
     LoadingDots, BouncyMascot, AnimatedCheckmark, FadeStack, AnimatedArrow,
+    BlinkingLED,
 )
 from ui.drop_zone import DropZone
 from ui.board_picker import BoardPicker
 from models import Device, InoConfig
 from constants import BOARDS, FIRST_RUN_FILE, MODE_PREF_FILE
+from examples import get_blink_code, get_led_pin
+from parser import parse_ino
 
 
 T = EASY_MODE_TITLE_FONT
@@ -325,6 +328,37 @@ class EasyOverlay(QWidget):
         self._home_sub.setStyleSheet(f"color: {C['text_muted']}; font-size: {B}px;")
         self._home_layout.addWidget(self._home_sub)
 
+        # ── Blink teaser (shown when device connected) ────────
+        self._blink_teaser = QFrame()
+        self._blink_teaser.setObjectName("card")
+        self._blink_teaser.hide()
+        bt = QHBoxLayout(self._blink_teaser)
+        bt.setContentsMargins(20, 14, 20, 14)
+        bt.setSpacing(14)
+        bt.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self._blink_led = BlinkingLED()
+        bt.addWidget(self._blink_led)
+
+        bt_text = QVBoxLayout()
+        bt_text.setSpacing(2)
+        self._blink_label = QLabel("Would you like to see your board blink?")
+        self._blink_label.setStyleSheet(f"font-size: 17px; font-weight: 600; color: {C['text']};")
+        bt_text.addWidget(self._blink_label)
+
+        self._blink_hint = QLabel("Built-in LED blink example for your ESP32")
+        self._blink_hint.setStyleSheet(f"font-size: 13px; color: {C['text_muted']};")
+        bt_text.addWidget(self._blink_hint)
+        bt.addLayout(bt_text)
+
+        self._blink_btn = QPushButton("✨ Yes, blink it!")
+        self._blink_btn.setObjectName("primary")
+        self._blink_btn.setFixedHeight(36)
+        self._blink_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._blink_btn.clicked.connect(self._on_blink_example)
+        bt.addWidget(self._blink_btn)
+        self._home_layout.addWidget(self._blink_teaser)
+
         self._home_dev_picker = QPushButton("Choose device...")
         self._home_dev_picker.setObjectName("secondary")
         self._home_dev_picker.setFixedWidth(280)
@@ -351,9 +385,48 @@ class EasyOverlay(QWidget):
     def _on_home_btn(self):
         self._stack.fade_to(self._page_index("setup"))
 
+    def _on_blink_example(self):
+        board = self._selected_board or "ESP32 Dev Module"
+        code = get_blink_code(board)
+
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".ino", delete=False, prefix="blink_")
+        tmp.write(code)
+        tmp_path = tmp.name
+        tmp.close()
+
+        cfg = parse_ino(tmp_path)
+        if not cfg.board or cfg.board not in BOARDS:
+            cfg.board = board
+            cfg.flash_size = BOARDS.get(board, {}).get("flash_size", "4MB")
+
+        self._pending_cfg = cfg
+        self._pending_path = tmp_path
+        self._config_confirmed = True
+        self._confirming = True
+        self.set_mascot_mood("excited")
+        self._flash_progress.setValue(0)
+        self._flash_status.setText("Starting blink compilation...")
+        self._stack.fade_to(self._page_index("flash_progress"))
+
+        from PyQt6.QtCore import QTimer as Qtimer
+        Qtimer.singleShot(500, lambda: self.file_selected.emit(tmp_path))
+
+    def _show_blink_teaser(self):
+        device = self._selected_device
+        board = self._selected_board or "ESP32 Dev Module"
+        led_pin = get_led_pin(board)
+        self._blink_label.setText(f"Would you like to see your {device.friendly_label if device else 'ESP32'} blink?")
+        self._blink_hint.setText(f"Built-in LED on GPIO {led_pin}  ·  {board}")
+        self._blink_teaser.show()
+        self._blink_led.start()
+        self.set_mascot_mood("excited")
+        self._home_mascot.set_bounce_style("excited")
+
     def _update_home_page(self):
         count = len(self._devices)
         if count == 0:
+            self._blink_teaser.hide()
             self._home_mascot.set_mood("sad", 160)
             self._home_mascot.set_bounce_style("sad")
             self._home_title.setText("No ESP32s yet!")
@@ -375,6 +448,7 @@ class EasyOverlay(QWidget):
             self._home_btn.hide()
             self._home_arrow.hide()
             self.device_selected.emit(dev.name)
+            self._show_blink_teaser()
         else:
             self._home_mascot.set_mood("happy", 160)
             self._home_mascot.set_bounce_style("happy")
@@ -387,6 +461,7 @@ class EasyOverlay(QWidget):
             self._home_arrow.hide()
             if self._selected_device:
                 self.device_selected.emit(self._selected_device.name)
+            self._show_blink_teaser()
 
     # ── Setup flow pages ────────────────────────────────────
 
@@ -987,6 +1062,7 @@ class EasyOverlay(QWidget):
         self._home_title.setText(f"{self._selected_device.friendly_label} is ready!")
         self._home_sub.setText("Drop your .ino file to flash it.")
         self.device_selected.emit(self._selected_device.name)
+        self._show_blink_teaser()
 
     def _go_back(self):
         current = self._stack.currentIndex()
