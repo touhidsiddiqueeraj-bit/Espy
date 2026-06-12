@@ -14,6 +14,11 @@ import tarfile
 from pathlib import Path
 
 
+def _cb(fn, msg):
+    if fn:
+        fn(msg)
+
+
 def _tools_dir() -> str:
     if getattr(sys, "frozen", False):
         base = sys._MEIPASS
@@ -60,7 +65,7 @@ def _download_url(arch: str, platform: str) -> str:
     return f"{base}/arduino-cli_latest_{platform}_{a}{ext}"
 
 
-def download_arduino_cli() -> str | None:
+def download_arduino_cli(progress_callback=None) -> str | None:
     tools = _tools_dir()
     cli_path = os.path.join(tools, "arduino-cli.exe" if sys.platform == "win32" else "arduino-cli")
 
@@ -71,14 +76,14 @@ def download_arduino_cli() -> str | None:
     url = _download_url(arch, platform)
     archive_path = os.path.join(tools, f"arduino-cli{ext}")
 
-    print(f"Downloading arduino-cli from {url}...")
+    _cb(progress_callback, "Downloading arduino-cli...")
     try:
         urllib.request.urlretrieve(url, archive_path)
     except Exception as e:
-        print(f"Download failed: {e}")
+        _cb(progress_callback, f"Download failed: {e}")
         return None
 
-    print("Extracting...")
+    _cb(progress_callback, "Extracting arduino-cli...")
     try:
         if ext == ".zip":
             with zipfile.ZipFile(archive_path) as zf:
@@ -99,7 +104,7 @@ def download_arduino_cli() -> str | None:
                             shutil.move(extracted, cli_path)
                         break
     except Exception as e:
-        print(f"Extraction failed: {e}")
+        _cb(progress_callback, f"Extraction failed: {e}")
         return None
     finally:
         if os.path.isfile(archive_path):
@@ -204,16 +209,16 @@ def _get_data_dir(cli: str) -> str:
     return default
 
 
-def install_esp32_core(cli: str) -> bool:
+def install_esp32_core(cli: str, progress_callback=None) -> bool:
     data_dir = _get_data_dir(cli)
     packages_dir = os.path.join(data_dir, "packages", "esp32")
     os.makedirs(packages_dir, exist_ok=True)
 
     # Download package index
-    print("Downloading package index...")
+    _cb(progress_callback, "Downloading package index...")
     index_path = os.path.join(data_dir, "package_esp32_index.json")
     if not _download_with_retry(_PACKAGE_INDEX_URL, index_path):
-        print("Failed to download package index")
+        _cb(progress_callback, "Failed to download package index")
         return False
 
     with open(index_path) as f:
@@ -227,7 +232,7 @@ def install_esp32_core(cli: str) -> bool:
             platform = p
             break
     if not platform:
-        print(f"ESP32 core v{_ESP32_CORE_VERSION} not found in package index")
+        _cb(progress_callback, f"ESP32 core v{_ESP32_CORE_VERSION} not found in package index")
         return False
 
     # Build (packager, name, version) tool lookup across all packages
@@ -239,16 +244,16 @@ def install_esp32_core(cli: str) -> bool:
     # ── Download & extract core ────────────────────────
     core_dir = os.path.join(packages_dir, "hardware", "esp32", _ESP32_CORE_VERSION)
     if not os.path.isdir(core_dir):
-        print("Downloading ESP32 core...")
+        _cb(progress_callback, "Downloading ESP32 core (200MB+)...")
         core_zip = os.path.join(data_dir, "esp32-core.zip")
         if not _download_with_retry(platform["url"], core_zip, platform["checksum"]):
+            _cb(progress_callback, "Failed to download ESP32 core")
             return False
-        print("Extracting core...")
+        _cb(progress_callback, "Extracting ESP32 core...")
         if not _extract_archive(core_zip, core_dir):
+            _cb(progress_callback, "Failed to extract ESP32 core")
             return False
         os.remove(core_zip)
-    else:
-        print(f"ESP32 core v{_ESP32_CORE_VERSION} already installed")
 
     # ── Download & extract all tool dependencies ───────
     tools_dir = os.path.join(packages_dir, "tools")
@@ -276,14 +281,14 @@ def install_esp32_core(cli: str) -> bool:
         if os.path.isdir(tool_dir):
             continue
 
-        print(f"Downloading {tn} {tv}...")
+        _cb(progress_callback, f"Downloading {tn} {tv}...")
         ext = ".zip" if sys_info["url"].endswith(".zip") else ".tar.gz"
         archive_path = os.path.join(data_dir, f"{tn}-{tv}{ext}")
         if not _download_with_retry(sys_info["url"], archive_path, sys_info["checksum"]):
-            print(f"  Skipping {tn} (download failed)")
+            _cb(progress_callback, f"Skipping {tn} (download failed)")
             continue
 
-        print(f"Extracting {tn}...")
+        _cb(progress_callback, f"Extracting {tn}...")
         os.makedirs(tool_dir, exist_ok=True)
         if not _extract_archive(archive_path, tool_dir):
             shutil.rmtree(tool_dir, ignore_errors=True)
@@ -291,7 +296,7 @@ def install_esp32_core(cli: str) -> bool:
         os.remove(archive_path)
 
     # ── Update core index so arduino-cli knows about the platform ──
-    print("Updating arduino-cli core index...")
+    _cb(progress_callback, "Updating arduino-cli core index...")
     subprocess.run([cli, "core", "update-index"], capture_output=True, text=True)
 
     # ── Write installed.json for the platform ─────
@@ -314,7 +319,7 @@ def install_esp32_core(cli: str) -> bool:
     with open(installed_path, "w") as f:
         json.dump(platforms_list, f)
 
-    print("ESP32 core installation complete!")
+    _cb(progress_callback, "ESP32 core installation complete!")
     return True
 
 
