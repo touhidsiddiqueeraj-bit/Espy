@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 APP_VERSION = "1.0.0"
-APP_NAME = "EasyESP"
+APP_NAME = "Espy"
 
 HEARTBEAT_PORT = 7777
 OTA_PORT = 8080

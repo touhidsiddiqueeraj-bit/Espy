@@ -10,7 +10,7 @@ from ui.animations import BouncyMascot
 class SetupSplash(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("EasyESP")
+        self.setWindowTitle("Espy")
         self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
         self.setFixedSize(420, 320)
         self.setStyleSheet(f"background: {C['bg']}; border: 2px solid {C['border']}; border-radius: 16px;")
@@ -27,7 +27,7 @@ class SetupSplash(QWidget):
         self._mascot.start_bounce()
         layout.addWidget(self._mascot, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        self._title = QLabel("Setting up EasyESP...")
+        self._title = QLabel("Setting up Espy...")
         self._title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._title.setStyleSheet(f"font-size: {T}px; font-weight: 700; color: {C['text']};")
         layout.addWidget(self._title)

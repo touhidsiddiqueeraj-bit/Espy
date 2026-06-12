@@ -7,10 +7,10 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QStackedWidget,
     QListWidget, QListWidgetItem, QFrame, QSizePolicy,
-    QMessageBox, QProgressBar,
+    QMessageBox, QProgressBar, QPlainTextEdit,
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, pyqtSignal
-from PyQt6.QtGui import QPixmap, QIcon, QMouseEvent
+from PyQt6.QtGui import QPixmap, QIcon, QMouseEvent, QFont
 
 
 class ClickableLabel(QLabel):
@@ -230,9 +230,9 @@ class MainWindow(QMainWindow):
         self._status_text.setStyleSheet(f"color: {C['text_muted']}; font-size: 15px; background: transparent;")
         banner_layout.addWidget(self._status_text, 1)
 
-        self._setup_btn = QPushButton("Set up new ESP32 →")
+        self._setup_btn = QPushButton("  Set up new ESP32 →")
         self._setup_btn.setObjectName("secondary")
-        self._setup_btn.setFixedWidth(200)
+        self._setup_btn.setFixedWidth(220)
         self._setup_btn.clicked.connect(self._show_setup_wizard)
         self._setup_btn.hide()
         banner_layout.addWidget(self._setup_btn)
@@ -308,7 +308,7 @@ class MainWindow(QMainWindow):
         ec.addWidget(ec_title)
 
         board_hint = QLabel()
-        board_hint.setStyleSheet(f"font-size: 12px; color: {C['text_muted']};")
+        board_hint.setStyleSheet(f"font-size: 12px; color: {C['text_muted']}; background: transparent;")
         self._example_board_hint = board_hint
         ec.addWidget(board_hint)
         ec.addStretch()
@@ -333,11 +333,104 @@ class MainWindow(QMainWindow):
         self._board_label = QLabel("ESP32 Dev Module")
         self._board_label.hide()
 
+        # ── Code input mode toggle ────────────────────────────
+        mode_row = QHBoxLayout()
+        mode_row.setSpacing(4)
+
+        self._drop_mode_btn = QPushButton("📁  Drop file")
+        self._drop_mode_btn.setObjectName("ghost")
+        self._drop_mode_btn.setFixedHeight(28)
+        self._drop_mode_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._drop_mode_btn.setStyleSheet(
+            f"QPushButton {{ font-size: 12px; font-weight: 700; color: {C['accent']}; "
+            f"background: {C['card']}; border: 1px solid {C['accent']}; "
+            f"border-radius: 14px; padding: 0 12px; }}"
+            f"QPushButton:hover {{ background: {C['card_hover']}; }}"
+        )
+        self._drop_mode_btn.clicked.connect(lambda: self._switch_input_mode(0))
+        mode_row.addWidget(self._drop_mode_btn)
+
+        self._write_mode_btn = QPushButton("✏️  Write code")
+        self._write_mode_btn.setObjectName("ghost")
+        self._write_mode_btn.setFixedHeight(28)
+        self._write_mode_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._write_mode_btn.setStyleSheet(
+            f"QPushButton {{ font-size: 12px; font-weight: 600; color: {C['text_muted']}; "
+            f"background: transparent; border: 1px solid {C['border']}; "
+            f"border-radius: 14px; padding: 0 12px; }}"
+            f"QPushButton:hover {{ color: {C['accent']}; border-color: {C['accent']}; }}"
+        )
+        self._write_mode_btn.clicked.connect(lambda: self._switch_input_mode(1))
+        mode_row.addWidget(self._write_mode_btn)
+
+        mode_row.addStretch()
+        layout.addLayout(mode_row)
+
+        # ── Input stacked widget: DropZone / Code editor ─────
+        self._input_stack = QStackedWidget()
+
         self._drop_zone = DropZone()
         self._drop_zone.file_dropped.connect(self._on_ino_received)
         self._drop_zone.file_chosen.connect(self._on_ino_received)
         self._drop_zone.set_enabled(False)
-        layout.addWidget(self._drop_zone, 1)
+        self._input_stack.addWidget(self._drop_zone)
+
+        editor_page = QWidget()
+        editor_layout = QVBoxLayout(editor_page)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(8)
+
+        self._code_editor = QPlainTextEdit()
+        self._code_editor.setPlaceholderText(
+            "// Paste or write your Arduino sketch here...\n\n"
+            "void setup() {\n"
+            "  Serial.begin(115200);\n"
+            "}\n\n"
+            "void loop() {\n"
+            "  Serial.println(\"Hello, ESP32!\");\n"
+            "  delay(1000);\n"
+            "}"
+        )
+        self._code_editor.setStyleSheet(
+            f"QPlainTextEdit {{"
+            f"  font-family: 'Ubuntu Mono', 'Consolas', monospace;"
+            f"  font-size: 14px;"
+            f"  color: {C['text']};"
+            f"  background: {C['bg']};"
+            f"  border: 2px solid {C['border']};"
+            f"  border-radius: 12px;"
+            f"  padding: 12px;"
+            f"  selection-background-color: {C['card']};"
+            f"}}"
+            f"QPlainTextEdit:focus {{"
+            f"  border-color: {C['accent']};"
+            f"}}"
+        )
+        editor_layout.addWidget(self._code_editor, 1)
+
+        editor_btn_row = QHBoxLayout()
+        editor_btn_row.setSpacing(8)
+
+        self._compile_btn = QPushButton("⚡ Compile & Flash")
+        self._compile_btn.setObjectName("primary")
+        self._compile_btn.setFixedHeight(40)
+        self._compile_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._compile_btn.setEnabled(False)
+        self._compile_btn.clicked.connect(self._on_compile_editor)
+        editor_btn_row.addWidget(self._compile_btn)
+
+        self._save_code_btn = QPushButton("💾 Save .ino")
+        self._save_code_btn.setObjectName("secondary")
+        self._save_code_btn.setFixedHeight(40)
+        self._save_code_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._save_code_btn.clicked.connect(self._on_save_editor_code)
+        editor_btn_row.addWidget(self._save_code_btn)
+
+        editor_btn_row.addStretch()
+        editor_layout.addLayout(editor_btn_row)
+
+        self._input_stack.addWidget(editor_page)
+        layout.addWidget(self._input_stack, 1)
 
         self._status_card = QFrame()
         self._status_card.setObjectName("card")
@@ -503,6 +596,7 @@ class MainWindow(QMainWindow):
 
     def _update_device_status(self):
         count = len(self._devices)
+        has_device = count > 0
         if count == 0:
             self._status_dot.set_online(False)
             self._status_text.setText("No devices found. Make sure your ESP32 is powered on and on the same Wi-Fi.")
@@ -524,6 +618,7 @@ class MainWindow(QMainWindow):
             self._setup_btn.show()
             self._drop_zone.set_enabled(True)
             self._update_partition_card()
+        self._compile_btn.setEnabled(has_device)
 
     def _on_device_selected(self, item: QListWidgetItem):
         row = self._device_list.row(item)
@@ -583,6 +678,46 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(800, self._process_next_batch)
 
     # ── INO handling ──────────────────────────────────────
+
+    def _switch_input_mode(self, index: int):
+        self._input_stack.setCurrentIndex(index)
+        active = f"QPushButton {{ font-size: 12px; font-weight: 700; color: {C['accent']}; "
+        active += f"background: {C['card']}; border: 1px solid {C['accent']}; "
+        active += f"border-radius: 14px; padding: 0 12px; }}"
+        active += f"QPushButton:hover {{ background: {C['card_hover']}; }}"
+
+        inactive = f"QPushButton {{ font-size: 12px; font-weight: 600; color: {C['text_muted']}; "
+        inactive += f"background: transparent; border: 1px solid {C['border']}; "
+        inactive += f"border-radius: 14px; padding: 0 12px; }}"
+        inactive += f"QPushButton:hover {{ color: {C['accent']}; border-color: {C['accent']}; }}"
+
+        self._drop_mode_btn.setStyleSheet(active if index == 0 else inactive)
+        self._write_mode_btn.setStyleSheet(active if index == 1 else inactive)
+
+    def _on_compile_editor(self):
+        code = self._code_editor.toPlainText().strip()
+        if not code:
+            self._status_text.setText("Write some code first!")
+            return
+        import tempfile, os
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".ino", delete=False, prefix="sketch_")
+        tmp.write(code)
+        tmp_path = tmp.name
+        tmp.close()
+        self._on_ino_received(tmp_path)
+
+    def _on_save_editor_code(self):
+        code = self._code_editor.toPlainText().strip()
+        if not code:
+            return
+        from PyQt6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Arduino Sketch", "sketch.ino",
+            "Arduino files (*.ino);;All files (*)"
+        )
+        if path:
+            with open(path, "w") as f:
+                f.write(code)
 
     def _on_ino_received(self, path: str):
         self._batch_ino_path = path

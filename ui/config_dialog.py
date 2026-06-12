@@ -239,7 +239,7 @@ class ConfigDialog(QDialog):
             wt = QLabel("⚠️  I found old OTA code in your sketch.")
             wt.setStyleSheet(f"color: {C['warning']}; font-weight: 600; font-size: 14px;")
             wb = QLabel(
-                "EasyESP handles updates wirelessly for you. "
+                "Espy handles updates wirelessly for you. "
                 "I'll remove the ArduinoOTA section automatically."
             )
             wb.setWordWrap(True)

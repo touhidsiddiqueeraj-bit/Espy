@@ -131,7 +131,7 @@ class ProgressScene(QWidget):
         action_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
         action_row.setSpacing(16)
 
-        self._save_btn.setObjectName("secondary")
+        self._save_btn.setObjectName("primary")
         self._save_btn.clicked.connect(self._on_save)
         self._save_btn.hide()
         action_row.addWidget(self._save_btn)
