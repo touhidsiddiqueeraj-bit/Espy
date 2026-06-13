@@ -1,13 +1,13 @@
 /*
- * EasyESP Base Firmware v2.0
+ * Espy Base Firmware v2.0
  * ESP32 Dev Module (4MB flash)
  *
- * Partition table (easyesp_4mb.csv):
+ * Partition table (espy_4mb.csv):
  *   nvs,          data, nvs,     0x1000,   0x3000
  *   otadata,      data, ota,     0x4000,   0x2000
  *   app0,         app,  ota_0,   0x6000,   0x1E0000
  *   app1,         app,  ota_1,   0x1E6000, 0x1E0000
- *   easyesp_data, data, nvs,     0x3C6000, 0x2000
+   * espy_data, data, nvs,     0x3C6000, 0x2000
  */
 
 #include <WiFi.h>
@@ -30,12 +30,12 @@
 #define CRASH_WINDOW_MS     5000
 #define CRASH_ROLLBACK_AT   3
 #define CRASH_RECOVERY_AT   5
-#define AP_SSID_PREFIX      "EasyESP-"
+#define AP_SSID_PREFIX      "Espy-"
 #define DNS_PORT            53
 #define CHUNK_SIZE          1024
 
 // NVS keys
-#define NVS_NS              "easyesp"
+#define NVS_NS              "espy"
 #define KEY_SSID            "ssid"
 #define KEY_PASS            "pass"
 #define KEY_NAME            "name"
@@ -51,7 +51,7 @@ WebServer     captiveServer(80);
 DNSServer     dns;
 WiFiUDP       udp;
 
-String  deviceName  = "EasyESP";
+String  deviceName  = "Espy";
 String  wifiSSID    = "";
 String  wifiPass    = "";
 bool    wifiOK      = false;
@@ -147,7 +147,7 @@ void tickLed() {
 // ── Crash Watchdog ──────────────────────────────────────
 
 void checkCrashWatchdog() {
-  prefs.begin("easyesp_data", false);
+  prefs.begin("espy_data", false);
 
   uint32_t crashes      = prefs.getUInt(KEY_CRASH_COUNT, 0);
   uint32_t crashTime    = prefs.getUInt(KEY_CRASH_TIME, 0);
@@ -178,7 +178,7 @@ void checkCrashWatchdog() {
     if (other != nullptr) {
       esp_ota_set_boot_partition(other);
     }
-    prefs.begin("easyesp_data", false);
+    prefs.begin("espy_data", false);
     prefs.putUInt(KEY_CRASH_COUNT, 0);
     prefs.putUInt(KEY_CRASH_TIME,  0);
     prefs.end();
@@ -193,14 +193,14 @@ void checkCrashWatchdog() {
 }
 
 void clearCrashCount() {
-  prefs.begin("easyesp_data", false);
+  prefs.begin("espy_data", false);
   prefs.putUInt(KEY_CRASH_COUNT, 0);
   prefs.putUInt(KEY_CRASH_TIME,  0);
   prefs.end();
 }
 
 uint32_t getTotalCrashes() {
-  prefs.begin("easyesp_data", true);
+  prefs.begin("espy_data", true);
   uint32_t c = prefs.getUInt(KEY_TOTAL_CRASHES, 0);
   prefs.end();
   return c;
@@ -212,7 +212,7 @@ void loadCredentials() {
   prefs.begin(NVS_NS, true);
   wifiSSID   = prefs.getString(KEY_SSID, "");
   wifiPass   = prefs.getString(KEY_PASS, "");
-  deviceName = prefs.getString(KEY_NAME, "EasyESP");
+    deviceName = prefs.getString(KEY_NAME, "Espy");
   prefs.end();
 }
 
@@ -233,7 +233,7 @@ const char PORTAL_HTML[] PROGMEM = R"rawhtml(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EasyESP Setup</title>
+<title>Espy Setup</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -271,7 +271,7 @@ const char PORTAL_HTML[] PROGMEM = R"rawhtml(
 </head>
 <body>
 <div class="card">
-  <h1>EasyESP Setup</h1>
+  <h1>Espy Setup</h1>
   <p>Enter your Wi-Fi details to connect this device.</p>
   <form method="POST" action="/save">
     <label>Device name</label>
@@ -316,7 +316,7 @@ const char PORTAL_SAVED_HTML[] PROGMEM = R"rawhtml(
   <h1>Saved!</h1>
   <p>Your ESP32 is connecting to Wi-Fi.<br>
      You can close this page.<br><br>
-     The device will appear in EasyESP on your computer shortly.</p>
+     The device will appear in Espy on your computer shortly.</p>
 </div>
 </body>
 </html>
@@ -364,7 +364,7 @@ void startCaptivePortal() {
       captiveServer.send(400, "text/plain", "SSID required");
       return;
     }
-    if (name.length() == 0) name = "EasyESP";
+    if (name.length() == 0) name = "Espy";
     captiveServer.send(200, "text/html", String(FPSTR(PORTAL_SAVED_HTML)));
     delay(500);
     saveCredentials(ssid, pass, name);
@@ -416,12 +416,12 @@ void startMDNS() {
   String safeName = deviceName;
   safeName.toLowerCase();
   safeName.replace(" ", "-");
-  snprintf(mdnsName, sizeof(mdnsName), "easyesp-%.24s", safeName.c_str());
+  snprintf(mdnsName, sizeof(mdnsName), "espy-%.24s", safeName.c_str());
 
   if (MDNS.begin(mdnsName)) {
-    MDNS.addService("_easyesp", "_tcp", OTA_PORT);
-    MDNS.addServiceTxt("_easyesp", "_tcp", "device", deviceName.c_str());
-    MDNS.addServiceTxt("_easyesp", "_tcp", "version", FW_VERSION);
+    MDNS.addService("_espy", "_tcp", OTA_PORT);
+    MDNS.addServiceTxt("_espy", "_tcp", "device", deviceName.c_str());
+    MDNS.addServiceTxt("_espy", "_tcp", "version", FW_VERSION);
     Serial.printf("[mDNS] Advertised as %s.local\n", mdnsName);
   }
 }
@@ -435,7 +435,7 @@ const char STATUS_HTML[] PROGMEM = R"rawhtml(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="10">
-<title>EasyESP</title>
+<title>Espy</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -461,7 +461,7 @@ const char STATUS_HTML[] PROGMEM = R"rawhtml(
 </head>
 <body>
 <div class="card">
-  <h1>EasyESP</h1>
+  <h1>Espy</h1>
   <div class="row">
     <span class="label">Device</span>
     <span class="value">%NAME%</span>
@@ -482,7 +482,7 @@ const char STATUS_HTML[] PROGMEM = R"rawhtml(
     <span class="label">Firmware</span>
     <span class="value">%VERSION%</span>
   </div>
-  <p>Drop a .ino file onto EasyESP on your computer to flash this device.</p>
+  <p>Drop a .ino file onto Espy on your computer to flash this device.</p>
 </div>
 </body>
 </html>
@@ -500,7 +500,7 @@ void setupOtaServer() {
   });
 
   // ── Phase 1: Handshake ──────────────────────────────
-  server.on("/easyesp/start", HTTP_POST, []() {
+  server.on("/espy/start", HTTP_POST, []() {
     if (otaStarted) {
       server.send(409, "application/json",
                   "{\"status\":\"busy\",\"reason\":\"ota_in_progress\"}");
@@ -558,7 +558,7 @@ void setupOtaServer() {
   // ── Phase 2: Chunk upload ───────────────────────────
   server.onNotFound([]() {
     String uri = server.uri();
-    if (uri.startsWith("/easyesp/chunk/") && server.method() == HTTP_POST) {
+    if (uri.startsWith("/espy/chunk/") && server.method() == HTTP_POST) {
       if (!otaStarted) {
         server.send(400, "application/json",
                     "{\"status\":\"error\",\"reason\":\"no_ota_started\"}");
@@ -587,7 +587,7 @@ void setupOtaServer() {
       return;
     }
 
-    if (uri == "/easyesp/chunk" && server.method() == HTTP_POST) {
+    if (uri == "/espy/chunk" && server.method() == HTTP_POST) {
       // Alternate chunk endpoint without index in path
       if (!otaStarted) {
         server.send(400, "application/json",
@@ -612,7 +612,7 @@ void setupOtaServer() {
     }
 
     // ── Phase 4: Alive check ─────────────────────────
-    if (uri == "/easyesp/alive" && server.method() == HTTP_GET) {
+    if (uri == "/espy/alive" && server.method() == HTTP_GET) {
       String resp = "{\"status\":\"running\""
                     ",\"version\":\"" + String(FW_VERSION) + "\""
                     ",\"device\":\"" + deviceName + "\"}";
@@ -621,7 +621,7 @@ void setupOtaServer() {
     }
 
     // ── Backup endpoint ─────────────────────────────
-    if (uri == "/easyesp/firmware" && server.method() == HTTP_GET) {
+    if (uri == "/espy/firmware" && server.method() == HTTP_GET) {
       const esp_partition_t* running = esp_ota_get_running_partition();
       if (!running) {
         server.send(500, "application/json", "{\"error\":\"no_partition\"}");
@@ -645,7 +645,7 @@ void setupOtaServer() {
   });
 
   // ── Phase 3: Commit ─────────────────────────────────
-  server.on("/easyesp/commit", HTTP_POST, []() {
+  server.on("/espy/commit", HTTP_POST, []() {
     if (!otaStarted) {
       server.send(400, "application/json",
                   "{\"status\":\"rejected\",\"reason\":\"no_ota_started\"}");
@@ -737,7 +737,7 @@ void sendHeartbeat() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n[EasyESP] Base firmware " FW_VERSION);
+  Serial.println("\n[Espy] Base firmware " FW_VERSION);
 
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
@@ -753,7 +753,7 @@ void setup() {
 
   if (!hasCredentials || recoveryMode) {
     Serial.println(recoveryMode ? "[RECOVERY] Many crashes — AP mode"
-                                : "[EasyESP] No credentials — AP mode");
+                                : "[Espy] No credentials — AP mode");
     startCaptivePortal();
     while (true) {
       tickCaptivePortal();
@@ -787,7 +787,7 @@ void setup() {
   // Device is stable — clear crash counter
   clearCrashCount();
 
-  Serial.printf("[EasyESP] Ready. %s @ %s\n",
+  Serial.printf("[Espy] Ready. %s @ %s\n",
                 deviceName.c_str(), WiFi.localIP().toString().c_str());
 }
 

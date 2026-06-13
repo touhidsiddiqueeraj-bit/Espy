@@ -51,7 +51,7 @@ class OtaWorker(QThread):
 
             # Phase 1: Handshake
             self.progress.emit(2, "Connecting to device...")
-            resp = self._post("/easyesp/start", {
+            resp = self._post("/espy/start", {
                 "firmware_size_bytes": size,
                 "checksum_sha256": checksum,
                 "version_tag": f"user_fw_{int(time.time())}",
@@ -77,7 +77,7 @@ class OtaWorker(QThread):
                 ok = False
                 for attempt in range(3):
                     try:
-                        cr = self._post(f"/easyesp/chunk/{i}", chunk, timeout=2)
+                        cr = self._post(f"/espy/chunk/{i}", chunk, timeout=2)
                         if cr.get("status") == "ok" or cr.get("chunk") == i:
                             ok = True
                             break
@@ -95,7 +95,7 @@ class OtaWorker(QThread):
 
             # Phase 3: Commit
             self.progress.emit(92, "Verifying firmware...")
-            cr = self._post("/easyesp/commit", {
+            cr = self._post("/espy/commit", {
                 "total_chunks": total,
                 "total_bytes": size,
                 "final_checksum": checksum, "checksum_type": "sha256",
@@ -120,7 +120,7 @@ class OtaWorker(QThread):
                 self.progress.emit(95, f"Waiting for device to come back online... {remaining}s")
                 try:
                     req = urllib.request.Request(
-                        f"http://{self.device.ip}:{self.device.port}/easyesp/alive"
+                        f"http://{self.device.ip}:{self.device.port}/espy/alive"
                     )
                     with urllib.request.urlopen(req, timeout=2) as r:
                         alive = json.loads(r.read())

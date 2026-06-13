@@ -4,7 +4,7 @@
 import sys
 import os
 
-# Ensure the easyesp package directory is on path
+# Ensure the espy package directory is on path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import run

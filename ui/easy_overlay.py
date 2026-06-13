@@ -1068,7 +1068,7 @@ class EasyOverlay(QWidget):
             base = sys._MEIPASS
         else:
             base = str(Path(__file__).parent.parent)
-        base_fw = Path(base) / "firmware" / "easyesp_base.bin"
+        base_fw = Path(base) / "firmware" / "espy_base.bin"
         if not base_fw.exists():
             self._flash_status.setText("Base firmware not found — reinstall Espy.")
             return

@@ -1,5 +1,5 @@
 /*
- * EasyESP Base Firmware v1.0
+ * Espy Base Firmware v1.0
  * ESP32 Dev Module (4MB flash)
  *
  * Responsibilities:
@@ -41,7 +41,7 @@
 #define WIFI_TIMEOUT        15000     // ms to wait for WiFi connection
 #define CRASH_WINDOW_MS     5000      // crash count resets after this
 #define CRASH_ROLLBACK_AT   3         // rollbacks after N crashes
-#define AP_SSID_PREFIX      "EasyESP-"
+#define AP_SSID_PREFIX      "Espy-"
 #define DNS_PORT            53
 #define CHUNK_SIZE          1024
 
@@ -63,7 +63,7 @@ WebServer     captiveServer(80);
 DNSServer     dns;
 WiFiUDP       udp;
 
-String  deviceName  = "EasyESP";
+String  deviceName  = "Espy";
 String  wifiSSID    = "";
 String  wifiPass    = "";
 bool    wifiOK      = false;
@@ -223,7 +223,7 @@ void loadCredentials() {
   prefs.begin(NVS_NS, true);
   wifiSSID   = prefs.getString(KEY_SSID, "");
   wifiPass   = prefs.getString(KEY_PASS, "");
-  deviceName = prefs.getString(KEY_NAME, "EasyESP");
+  deviceName = prefs.getString(KEY_NAME, "Espy");
   prefs.end();
 }
 
@@ -247,7 +247,7 @@ const char PORTAL_HTML[] PROGMEM = R"rawhtml(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EasyESP Setup</title>
+<title>Espy Setup</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -284,7 +284,7 @@ const char PORTAL_HTML[] PROGMEM = R"rawhtml(
 </head>
 <body>
 <div class="card">
-  <h1>⚡ EasyESP Setup</h1>
+  <h1>⚡ Espy Setup</h1>
   <p>Enter your Wi-Fi details to connect this device to your network.</p>
   <form method="POST" action="/save">
     <label>Device name</label>
@@ -329,7 +329,7 @@ const char PORTAL_SAVED_HTML[] PROGMEM = R"rawhtml(
   <h1>✓ Saved!</h1>
   <p>Your ESP32 is connecting to Wi-Fi.<br>
      You can close this page.<br><br>
-     The device will appear in EasyESP on your computer shortly.</p>
+     The device will appear in Espy on your computer shortly.</p>
 </div>
 </body>
 </html>
@@ -387,7 +387,7 @@ void startCaptivePortal() {
       captiveServer.send(400, "text/plain", "SSID required");
       return;
     }
-    if (name.length() == 0) name = "EasyESP";
+    if (name.length() == 0) name = "Espy";
 
     captiveServer.send(200, "text/html", String(FPSTR(PORTAL_SAVED_HTML)));
     delay(500);
@@ -472,7 +472,7 @@ const char STATUS_HTML[] PROGMEM = R"rawhtml(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="10">
-<title>EasyESP</title>
+<title>Espy</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -498,7 +498,7 @@ const char STATUS_HTML[] PROGMEM = R"rawhtml(
 </head>
 <body>
 <div class="card">
-  <h1>⚡ EasyESP</h1>
+  <h1>⚡ Espy</h1>
   <div class="row">
     <span class="label">Device</span>
     <span class="value">%NAME%</span>
@@ -519,7 +519,7 @@ const char STATUS_HTML[] PROGMEM = R"rawhtml(
     <span class="label">Firmware</span>
     <span class="value">%VERSION%</span>
   </div>
-  <p>Drop a .ino file onto EasyESP on your computer to flash this device.</p>
+  <p>Drop a .ino file onto Espy on your computer to flash this device.</p>
 </div>
 </body>
 </html>
@@ -741,7 +741,7 @@ void setupOtaServer() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n[EasyESP] Base firmware " FW_VERSION " booting");
+  Serial.println("\n[Espy] Base firmware " FW_VERSION " booting");
 
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
@@ -756,7 +756,7 @@ void setup() {
 
   if (!hasCredentials) {
     // ── First boot: captive portal ──────────────────────
-    Serial.println("[EasyESP] No credentials — starting captive portal");
+    Serial.println("[Espy] No credentials — starting captive portal");
     startCaptivePortal();
 
     // Loop entirely inside captive portal until user saves & device restarts
@@ -795,7 +795,7 @@ void setup() {
   // Device is stable — clear crash counter
   clearCrashCount();
 
-  Serial.printf("[EasyESP] Ready. Device: %s  IP: %s\n",
+  Serial.printf("[Espy] Ready. Device: %s  IP: %s\n",
                 deviceName.c_str(),
                 WiFi.localIP().toString().c_str());
 }

@@ -76,7 +76,7 @@ class CompilerWorker(QThread):
         cli = self._find_arduino_cli()
         if not cli:
             self.failed.emit(
-                "Could not find the build tools. EasyESP installation may be incomplete.",
+                "Could not find the build tools. Espy installation may be incomplete.",
                 "arduino-cli not found in PATH or bundled tools."
             )
             return

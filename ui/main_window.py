@@ -304,7 +304,7 @@ class MainWindow(QMainWindow):
         ec.addWidget(self._example_led)
 
         ec_title = QLabel("Blink")
-        ec_title.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {C['text']};")
+        ec_title.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {C['text']}; background: transparent;")
         ec.addWidget(ec_title)
 
         board_hint = QLabel()
@@ -321,7 +321,7 @@ class MainWindow(QMainWindow):
         ec.addWidget(self._flash_example_btn)
 
         self._save_example_btn = QPushButton("💾 Save")
-        self._save_example_btn.setObjectName("ghost")
+        self._save_example_btn.setObjectName("primary")
         self._save_example_btn.setFixedHeight(28)
         self._save_example_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._save_example_btn.clicked.connect(self._save_example_ino)
@@ -931,7 +931,7 @@ class MainWindow(QMainWindow):
             base = sys._MEIPASS
         else:
             base = str(Path(__file__).parent.parent)
-        base_fw = Path(base) / "firmware" / "easyesp_base.bin"
+        base_fw = Path(base) / "firmware" / "espy_base.bin"
         if not base_fw.exists():
             return
 

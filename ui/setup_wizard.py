@@ -311,7 +311,7 @@ class SetupWizard(QWidget):
         base_fw = Path(base) / "firmware" / "easyesp_base.bin"
 
         if not base_fw.exists():
-            self._flash_status.setText("Base firmware not found. Reinstall EasyESP.")
+            self._flash_status.setText("Base firmware not found. Reinstall Espy.")
             return
 
         self._flash_bar.show()

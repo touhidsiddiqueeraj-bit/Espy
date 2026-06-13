@@ -347,7 +347,7 @@ def drop_zone_illustration(size: int = 180) -> str:
 </svg>"""
 
 def onboarding_flow_svg(width: int = 360, height: int = 380) -> str:
-    """Single SVG showing the 4-step EasyESP lifecycle.
+    """Single SVG showing the 4-step Espy lifecycle.
     Vertical timeline with icons and short plain-English labels."""
     c = _c('accent')
     s = _c('success')
@@ -394,7 +394,7 @@ def onboarding_flow_svg(width: int = 360, height: int = 380) -> str:
   <rect x="40" y="210" width="28" height="28" rx="14" fill="{c}"/>
   <text x="54" y="230" text-anchor="middle" class="step-num">3</text>
   <text x="80" y="228" class="step-title">Drop your code</text>
-  <text x="80" y="246" class="step-desc">Drag any .ino file onto EasyESP.</text>
+  <text x="80" y="246" class="step-desc">Drag any .ino file onto Espy.</text>
   <!-- Drop icon -->
   <rect x="58" y="258" width="24" height="20" rx="4" fill="none" stroke="{c}" stroke-width="1.5" stroke-dasharray="3 2"/>
   <path d="M70 260 L70 272 M64 267 L70 272 L76 267" stroke="{c}" stroke-width="2" fill="none" stroke-linecap="round"/>

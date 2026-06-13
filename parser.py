@@ -579,7 +579,7 @@ def parse_ino(path: str) -> InoConfig:
             cfg.auto_fixes.append({
                 "type": "remove_ota",
                 "label": "Remove ArduinoOTA code",
-                "description": "EasyESP handles OTA automatically. Stripping ArduinoOTA includes and calls.",
+                "description": "Espy handles OTA automatically. Stripping ArduinoOTA includes and calls.",
             })
             break
 

@@ -1,14 +1,14 @@
-# EasyESP
+# Espy
 
-> Getting people into IoT. Vibe coding got you the code — EasyESP gets it on the hardware.
+> Getting people into IoT. Vibe coding got you the code — Espy gets it on the hardware.
 
 [![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-blue.svg)](LICENSE.md)
 [![Python](https://img.shields.io/badge/python-3.10+-brightgreen)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)]()
 
-Vibe coding has already dropped the barrier to entry — anyone can get good code now. EasyESP drops the **next barrier**: getting that code onto real hardware. No wrestling with Arduino IDE, no board configs, no digging for missing libraries, no USB cables after the first flash. Drop a `.ino` file, and EasyESP handles the rest — auto board detection, auto library resolution, wiring diagrams, and one-click OTA upload.
+Vibe coding has already dropped the barrier to entry — anyone can get good code now. Espy drops the **next barrier**: getting that code onto real hardware. No wrestling with Arduino IDE, no board configs, no digging for missing libraries, no USB cables after the first flash. Drop a `.ino` file, and Espy handles the rest — auto board detection, auto library resolution, wiring diagrams, and one-click OTA upload.
 
-EasyESP is a cross-platform desktop application designed to get as many people as possible on board with IoT. It enables **one-click wireless firmware updates for ESP32 microcontrollers over Wi-Fi (OTA)** and handles first-time USB setup. Drop an Arduino `.ino` sketch file onto the app — it compiles it via `arduino-cli` and uploads the binary to the ESP32 over the network. No configuration required.
+Espy is a cross-platform desktop application designed to get as many people as possible on board with IoT. It enables **one-click wireless firmware updates for ESP32 microcontrollers over Wi-Fi (OTA)** and handles first-time USB setup. Drop an Arduino `.ino` sketch file onto the app — it compiles it via `arduino-cli` and uploads the binary to the ESP32 over the network. No configuration required.
 
 ### What's New
 
@@ -20,7 +20,7 @@ EasyESP is a cross-platform desktop application designed to get as many people a
 ## Quick Start
 
 ### Easy Mode
-Launch EasyESP, drop your `.ino` file on the drop zone, and flash. No configuration needed.
+Launch Espy, drop your `.ino` file on the drop zone, and flash. No configuration needed.
 
 ### Advanced Mode
 Switch to Advanced mode for full control over board selection, partition layout, flash size, and OTA settings.
@@ -32,7 +32,7 @@ Plug in via USB once to flash the base firmware. After that, all updates happen 
 
 ## Features
 
-- **One-click OTA** — Drop any `.ino` file; EasyESP compiles it and uploads over Wi-Fi
+- **One-click OTA** — Drop any `.ino` file; Espy compiles it and uploads over Wi-Fi
 - **Auto board detection** — Parses your sketch and selects the right ESP32 board automatically
 - **Auto library resolver** — Detects missing libraries and fetches them on the fly
 - **Wiring diagram help** — Visual pinout diagrams for common ESP32 boards, no more guessing
@@ -107,11 +107,11 @@ cd Espy
 # Install dependencies
 pip install PyQt6 esptool pyserial
 
-# Run EasyESP
+# Run Espy
 python main.py
 ```
 
-On first launch, EasyESP will automatically download `arduino-cli` and install the ESP32 Arduino core.
+On first launch, Espy will automatically download `arduino-cli` and install the ESP32 Arduino core.
 
 ---
 

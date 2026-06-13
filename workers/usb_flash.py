@@ -55,7 +55,7 @@ class UsbFlashWorker(QThread):
             esptool = self._find_esptool()
             if not esptool:
                 self.failed.emit(
-                    "Could not find esptool. EasyESP installation may be incomplete."
+                    "Could not find esptool. Espy installation may be incomplete."
                 )
                 return
 
@@ -83,7 +83,7 @@ class UsbFlashWorker(QThread):
                 return
 
             # Flash base firmware at 0x0 (combined bootloader + partition + app)
-            self.progress.emit(40, "Installing EasyESP base firmware...")
+            self.progress.emit(40, "Installing Espy base firmware...")
             flash_cmd = [*esptool, "--port", self.port, "--baud", "921600"]
             if self.board:
                 from constants import BOARDS

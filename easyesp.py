@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""EasyESP backward-compatible entry point."""
+"""Espy backward-compatible entry point."""
 import sys
 import os
 

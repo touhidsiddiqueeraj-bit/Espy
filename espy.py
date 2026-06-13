@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# EasyESP — Monolithic build (all source inlined)
+# Espy — Monolithic build (all source inlined)
 # 22 modules combined into one file
 # Run: python3 espy.py
 
@@ -295,7 +295,7 @@ C = WARM_PASTEL
 # ══ constants.py ═══════════════════════════════════════
 
 APP_VERSION = "1.0.0"
-APP_NAME = "EasyESP"
+APP_NAME = "Espy"
 
 HEARTBEAT_PORT = 7777
 OTA_PORT = 8080
@@ -431,17 +431,17 @@ BOARDS = {
 }
 
 if sys.platform == "linux":
-    APP_DIR = Path.home() / ".config" / "easyesp"
+    APP_DIR = Path.home() / ".config" / "espy"
     USB_PORT_PATTERNS = ("ttyUSB", "ttyACM")
     SYSTEM_FONT = "'Ubuntu', 'Noto Sans', system-ui, sans-serif"
     MONO_FONT = "'Ubuntu Mono', 'Consolas', monospace"
 elif sys.platform == "win32":
-    APP_DIR = Path.home() / "AppData" / "Local" / "EasyESP"
+    APP_DIR = Path.home() / "AppData" / "Local" / "Espy"
     USB_PORT_PATTERNS = ("COM",)
     SYSTEM_FONT = "'Segoe UI', system-ui, sans-serif"
     MONO_FONT = "'Consolas', 'Courier New', monospace"
 else:
-    APP_DIR = Path.home() / ".config" / "easyesp"
+    APP_DIR = Path.home() / ".config" / "espy"
     USB_PORT_PATTERNS = ("ttyUSB", "ttyACM")
     SYSTEM_FONT = "system-ui, sans-serif"
     MONO_FONT = "monospace"
@@ -1121,7 +1121,7 @@ def drop_zone_illustration(size: int = 180) -> str:
 </svg>"""
 
 def onboarding_flow_svg(width: int = 360, height: int = 380) -> str:
-    """Single SVG showing the 4-step EasyESP lifecycle.
+    """Single SVG showing the 4-step Espy lifecycle.
     Vertical timeline with icons and short plain-English labels."""
     c = _c('accent')
     s = _c('success')
@@ -1168,7 +1168,7 @@ def onboarding_flow_svg(width: int = 360, height: int = 380) -> str:
   <rect x="40" y="210" width="28" height="28" rx="14" fill="{c}"/>
   <text x="54" y="230" text-anchor="middle" class="step-num">3</text>
   <text x="80" y="228" class="step-title">Drop your code</text>
-  <text x="80" y="246" class="step-desc">Drag any .ino file onto EasyESP.</text>
+  <text x="80" y="246" class="step-desc">Drag any .ino file onto Espy.</text>
   <!-- Drop icon -->
   <rect x="58" y="258" width="24" height="20" rx="4" fill="none" stroke="{c}" stroke-width="1.5" stroke-dasharray="3 2"/>
   <path d="M70 260 L70 272 M64 267 L70 272 L76 267" stroke="{c}" stroke-width="2" fill="none" stroke-linecap="round"/>
@@ -2895,7 +2895,7 @@ class UsbFlashWorker(QThread):
             esptool = self._find_esptool()
             if not esptool:
                 self.failed.emit(
-                    "Could not find esptool. EasyESP installation may be incomplete."
+                    "Could not find esptool. Espy installation may be incomplete."
                 )
                 return
 
@@ -2923,7 +2923,7 @@ class UsbFlashWorker(QThread):
                 return
 
             # Flash base firmware
-            self.progress.emit(40, "Installing EasyESP base firmware...")
+            self.progress.emit(40, "Installing Espy base firmware...")
             flash_cmd = [*esptool, "--port", self.port, "--baud", "921600"]
             if self.board:
                 from constants import BOARDS
@@ -2999,12 +2999,12 @@ class CompilerWorker(QThread):
         cli = self._find_arduino_cli()
         if not cli:
             self.failed.emit(
-                "Could not find the build tools. EasyESP installation may be incomplete.",
+                "Could not find the build tools. Espy installation may be incomplete.",
                 "arduino-cli not found in PATH or bundled tools."
             )
             return
 
-        tmp = tempfile.mkdtemp(prefix="easyesp_")
+        tmp = tempfile.mkdtemp(prefix="espy_")
         try:
             sketch_name = Path(self.ino_path).stem
             sketch_dir = os.path.join(tmp, sketch_name)
@@ -3142,7 +3142,7 @@ class OtaWorker(QThread):
 
             # Phase 1: Handshake
             self.progress.emit(2, "Connecting to device...")
-            resp = self._post("/easyesp/start", {
+            resp = self._post("/espy/start", {
                 "firmware_size_bytes": size,
                 "checksum_sha256": checksum,
                 "version_tag": f"user_fw_{int(time.time())}",
@@ -3168,7 +3168,7 @@ class OtaWorker(QThread):
                 ok = False
                 for attempt in range(3):
                     try:
-                        cr = self._post(f"/easyesp/chunk/{i}", chunk, timeout=2)
+                        cr = self._post(f"/espy/chunk/{i}", chunk, timeout=2)
                         if cr.get("status") == "ok" or cr.get("chunk") == i:
                             ok = True
                             break
@@ -3186,7 +3186,7 @@ class OtaWorker(QThread):
 
             # Phase 3: Commit
             self.progress.emit(92, "Verifying firmware...")
-            cr = self._post("/easyesp/commit", {
+            cr = self._post("/espy/commit", {
                 "total_chunks": total,
                 "total_bytes": size,
                 "final_checksum": checksum, "checksum_type": "sha256",
@@ -3341,7 +3341,7 @@ class DiscoveryEngine(QThread):
 
 def partitions_to_csv(parts: list[dict]) -> str:
     lines = [
-        "# EasyESP partition table",
+        "# Espy partition table",
         "# Name,         Type, SubType, Offset,   Size,     Flags",
     ]
     csv_map = {
@@ -3358,7 +3358,7 @@ def partitions_to_csv(parts: list[dict]) -> str:
         "Bootloader": ("app", "boot"),
         "Partition Table": ("data", "undefined"),
         "NVS": ("data", "nvs"),
-        "easyesp_data": ("data", "nvs"),
+        "espy_data": ("data", "nvs"),
     }
     offset_map = {
         "Bootloader": "0x1000",
@@ -3872,7 +3872,7 @@ class ConfigDialog(QDialog):
             wt = QLabel("⚠️  I found old OTA code in your sketch.")
             wt.setStyleSheet(f"color: {C['warning']}; font-weight: 600; font-size: 16px;")
             wb = QLabel(
-                "EasyESP handles updates wirelessly for you. "
+                "Espy handles updates wirelessly for you. "
                 "I'll remove the ArduinoOTA section automatically."
             )
             wb.setWordWrap(True)
@@ -4817,10 +4817,10 @@ class SetupWizard(QWidget):
             base = sys._MEIPASS
         else:
             base = str(Path(__file__).parent.parent)
-        base_fw = Path(base) / "firmware" / "easyesp_base.bin"
+        base_fw = Path(base) / "firmware" / "espy_base.bin"
 
         if not base_fw.exists():
-            self._flash_status.setText("Base firmware not found. Reinstall EasyESP.")
+            self._flash_status.setText("Base firmware not found. Reinstall Espy.")
             return
 
         self._flash_bar.show()
@@ -4931,7 +4931,7 @@ class EasyOverlay(QWidget):
         self._logo_mascot.setFixedSize(28, 34)
         tl.addWidget(self._logo_mascot)
 
-        logo = QLabel("EasyESP")
+        logo = QLabel("Espy")
         logo.setStyleSheet(f"font-size: 22px; font-weight: 800; color: {C['accent']};")
         tl.addWidget(logo)
         tl.addStretch()
@@ -5008,7 +5008,7 @@ class EasyOverlay(QWidget):
         mascot.start_bounce()
         layout.addWidget(mascot, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        title = QLabel("How EasyESP works")
+        title = QLabel("How Espy works")
         title.setStyleSheet(f"font-size: {T}px; font-weight: 700; color: {C['text']};")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
@@ -5072,7 +5072,7 @@ class EasyOverlay(QWidget):
         mascot.start_bounce()
         layout.addWidget(mascot, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        title = QLabel("How do you want to use EasyESP?")
+        title = QLabel("How do you want to use Espy?")
         title.setStyleSheet(f"font-size: {T}px; font-weight: 700; color: {C['text']};")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
@@ -5752,9 +5752,9 @@ class EasyOverlay(QWidget):
             base = sys._MEIPASS
         else:
             base = str(Path(__file__).parent.parent)
-        base_fw = Path(base) / "firmware" / "easyesp_base.bin"
+        base_fw = Path(base) / "firmware" / "espy_base.bin"
         if not base_fw.exists():
-            self._flash_status.setText("Base firmware not found — reinstall EasyESP.")
+            self._flash_status.setText("Base firmware not found — reinstall Espy.")
             return
 
         if not self._usb_port:
@@ -5972,7 +5972,7 @@ class MainWindow(QMainWindow):
         logo_mascot.setFixedSize(28, 34)
         ll.addWidget(logo_mascot)
 
-        logo_txt = QLabel("EasyESP")
+        logo_txt = QLabel("Espy")
         logo_txt.setStyleSheet(
             f"font-size: 19px; font-weight: 800; color: {C['accent']};"
             f"background: transparent;"
@@ -6507,7 +6507,7 @@ class MainWindow(QMainWindow):
             base = sys._MEIPASS
         else:
             base = str(Path(__file__).parent.parent)
-        base_fw = Path(base) / "firmware" / "easyesp_base.bin"
+        base_fw = Path(base) / "firmware" / "espy_base.bin"
         if not base_fw.exists():
             return
 
@@ -6573,9 +6573,9 @@ FRIENDLY_ERRORS: list[tuple[str, str]] = [
     (r"multiple definition of",
      "Your code has a duplicate function — likely a copy-paste issue. Share the error below with your AI assistant."),
     (r"No such file or directory",
-     "A required library is missing. EasyESP tried to install it automatically."),
+     "A required library is missing. Espy tried to install it automatically."),
     (r"'DHT' was not declared",
-     "Missing DHT sensor library. EasyESP can install it automatically."),
+     "Missing DHT sensor library. Espy can install it automatically."),
     (r"board manager: esp32:esp32 not installed",
      "ESP32 support needs repair. Click to fix (one-time, ~10 seconds)."),
     (r"exit status 1",
@@ -6834,7 +6834,7 @@ def parse_ino(path: str) -> InoConfig:
             cfg.auto_fixes.append({
                 "type": "remove_ota",
                 "label": "Remove ArduinoOTA code",
-                "description": "EasyESP handles OTA automatically. Stripping ArduinoOTA includes and calls.",
+                "description": "Espy handles OTA automatically. Stripping ArduinoOTA includes and calls.",
             })
             break
 
@@ -6876,4 +6876,4 @@ if __name__ == '__main__':
         w.show()
         sys.exit(app.exec())
     else:
-        print("EasyESP loaded (QApplication already exists)")
+        print("Espy loaded (QApplication already exists)")

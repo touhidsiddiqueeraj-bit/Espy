@@ -15,7 +15,7 @@ from models import InoConfig
 
 def partitions_to_csv(parts: list[dict]) -> str:
     lines = [
-        "# EasyESP partition table",
+        "# Espy partition table",
         "# Name,         Type, SubType, Offset,   Size,     Flags",
     ]
     csv_map = {

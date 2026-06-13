@@ -1,5 +1,5 @@
-# easyesp.spec
-# Build command: pyinstaller easyesp.spec
+# espy.spec
+# Build command: pyinstaller espy.spec
 
 import sys
 from pathlib import Path
@@ -16,7 +16,7 @@ a = Analysis(
         ('tools/arduino-cli.exe', 'tools'),
     ],
     datas=[
-        ('firmware/easyesp_base.bin', 'firmware'),
+        ('firmware/espy_base.bin', 'firmware'),
 
         # Top 20 bundled libraries (optional, arduino-cli downloads if missing)
         # ('arduino-data/', 'arduino-data'),
@@ -51,19 +51,19 @@ if sys.platform == "linux":
         a.zipfiles,
         a.datas,
         [],
-        name='EasyESP',
+        name='Espy',
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
         upx=True,
         upx_exclude=[],
         runtime_tmpdir=None,
-        console=False,
+        console=True,
         disable_windowed_traceback=False,
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='assets/easyesp.png',
+        icon='assets/espy.png',
     )
 else:
     exe = EXE(
@@ -73,18 +73,18 @@ else:
         a.zipfiles,
         a.datas,
         [],
-        name='EasyESP',
+        name='Espy',
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
         upx=True,
         upx_exclude=[],
         runtime_tmpdir=None,
-        console=False,
+        console=True,
         disable_windowed_traceback=False,
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='assets/easyesp.ico',
+        icon='assets/espy.ico',
         version='version_info.txt',
     )

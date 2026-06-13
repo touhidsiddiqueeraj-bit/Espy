@@ -33,7 +33,7 @@ def arp_scan(timeout: float = 4) -> list[tuple[str, str]]:
     def probe(ip: str) -> Optional[tuple[str, str]]:
         try:
             req = urllib.request.Request(
-                f"http://{ip}:{OTA_PORT}/easyesp/alive",
+                f"http://{ip}:{OTA_PORT}/espy/alive",
                 method="GET",
             )
             with urllib.request.urlopen(req, timeout=1) as resp:

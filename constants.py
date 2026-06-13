@@ -138,17 +138,17 @@ BOARDS = {
 }
 
 if sys.platform == "linux":
-    APP_DIR = Path.home() / ".config" / "easyesp"
+    APP_DIR = Path.home() / ".config" / "espy"
     USB_PORT_PATTERNS = ("ttyUSB", "ttyACM")
     SYSTEM_FONT = "'Ubuntu', 'Noto Sans', system-ui, sans-serif"
     MONO_FONT = "'Ubuntu Mono', 'Consolas', monospace"
 elif sys.platform == "win32":
-    APP_DIR = Path.home() / "AppData" / "Local" / "EasyESP"
+    APP_DIR = Path.home() / "AppData" / "Local" / "Espy"
     USB_PORT_PATTERNS = ("COM",)
     SYSTEM_FONT = "'Segoe UI', system-ui, sans-serif"
     MONO_FONT = "'Consolas', 'Courier New', monospace"
 else:
-    APP_DIR = Path.home() / ".config" / "easyesp"
+    APP_DIR = Path.home() / ".config" / "espy"
     USB_PORT_PATTERNS = ("ttyUSB", "ttyACM")
     SYSTEM_FONT = "system-ui, sans-serif"
     MONO_FONT = "monospace"
