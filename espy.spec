@@ -17,6 +17,7 @@ a = Analysis(
     ],
     datas=[
         ('firmware/espy_base.bin', 'firmware'),
+        ('firmware/espy_4mb.csv', 'firmware'),
 
         # Top 20 bundled libraries (optional, arduino-cli downloads if missing)
         # ('arduino-data/', 'arduino-data'),

@@ -84,7 +84,7 @@ class OtaWorker(QThread):
                     except Exception:
                         if attempt == 2:
                             break
-                        time.sleep(0.3)
+                        self.msleep(300)
 
                 if not ok:
                     self.failed.emit(
@@ -112,7 +112,10 @@ class OtaWorker(QThread):
             # Phase 4: Post-reboot heartbeat
             self.progress.emit(95, "Rebooting device...")
             reboot_ms = cr.get("rebooting_in_ms", 2000)
-            time.sleep(reboot_ms / 1000 + 1)
+            for _ in range(int(reboot_ms / 1000) + 2):
+                self.msleep(500)
+                if self.isInterruptionRequested():
+                    return
 
             pb_deadline = time.time() + POST_FLASH_HEARTBEAT_WINDOW
             while time.time() < pb_deadline:
@@ -131,7 +134,10 @@ class OtaWorker(QThread):
                             return
                 except Exception:
                     pass
-                time.sleep(2)
+                for _ in range(4):
+                    self.msleep(500)
+                    if self.isInterruptionRequested():
+                        return
 
             self.failed.emit(
                 "Device didn't respond after reboot. "

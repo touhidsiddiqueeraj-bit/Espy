@@ -54,7 +54,7 @@ def run():
     # Set default font
     font = app.font()
     font.setPointSize(10)
-    font.setFamilies([SYSTEM_FONT.split(",")[0].strip().strip("'")])
+    font.setFamilies([f.strip().strip("'") for f in SYSTEM_FONT.split(",")])
     app.setFont(font)
 
     # Show splash while setting up toolchain on first launch

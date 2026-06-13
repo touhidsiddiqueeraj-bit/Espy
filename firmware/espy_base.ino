@@ -7,7 +7,7 @@
  *   otadata,      data, ota,     0x4000,   0x2000
  *   app0,         app,  ota_0,   0x6000,   0x1E0000
  *   app1,         app,  ota_1,   0x1E6000, 0x1E0000
-   * espy_data, data, nvs,     0x3C6000, 0x2000
+ *   espy_data, data, nvs,     0x3C6000, 0x2000
  */
 
 #include <WiFi.h>

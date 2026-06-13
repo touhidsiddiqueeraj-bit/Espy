@@ -120,7 +120,28 @@ def download_arduino_cli(progress_callback=None) -> str | None:
 
 _PACKAGE_INDEX_URL = "https://espressif.github.io/arduino-esp32/package_esp32_index.json"
 _ESP32_CORE_VERSION = "3.3.10"
-_HOST = "x86_64-pc-linux-gnu"
+
+
+def _detect_host() -> str:
+    """Return the host string used in the ESP32 package index for this machine."""
+    import platform
+    machine = platform.machine().lower()
+    if sys.platform == "win32":
+        if machine in ("amd64", "x86_64"):
+            return "x86_64-mingw32"
+        return "aarch64-mingw32"
+    elif sys.platform == "darwin":
+        if machine in ("amd64", "x86_64"):
+            return "x86_64-apple-darwin"
+        return "aarch64-apple-darwin"
+    else:
+        if machine in ("amd64", "x86_64"):
+            return "x86_64-pc-linux-gnu"
+        elif machine in ("aarch64", "arm64"):
+            return "aarch64-linux-gnu"
+        elif machine.startswith("arm"):
+            return "arm-linux-gnueabihf"
+        return "x86_64-pc-linux-gnu"
 
 
 def _sha256_of(path: str) -> str:
@@ -270,8 +291,9 @@ def install_esp32_core(cli: str, progress_callback=None) -> bool:
 
         # Find matching system for our host
         sys_info = None
+        host = _detect_host()
         for s in t.get("systems", []):
-            if s.get("host") == _HOST:
+            if s.get("host") == host:
                 sys_info = s
                 break
         if not sys_info:

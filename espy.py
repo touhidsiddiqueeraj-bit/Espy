@@ -1460,64 +1460,6 @@ def board_esp32s2(size: int = 180) -> str:
 
 
 
-def board_esp32s3(size: int = 180) -> str:
-    return f"""<svg width="{size}" height="{int(size * 0.75)}" viewBox="0 0 200 150">
-  <rect x="10" y="10" width="180" height="100" rx="6" fill="#3A1B4A" stroke="#241030" stroke-width="2"/>
-  <rect x="10" y="10" width="25" height="100" rx="6" fill="#241030" opacity="0.2"/>
-  <rect x="165" y="10" width="25" height="100" rx="6" fill="#241030" opacity="0.2"/>
-  <rect x="45" y="30" width="110" height="60" rx="4" fill="#5C2D7A" stroke="#3A1B4A" stroke-width="1.5"/>
-  <rect x="60" y="35" width="80" height="50" rx="5" fill="#D0D0D0" stroke="#999" stroke-width="1.5"/>
-  <text x="100" y="65" font-size="10" fill="#333" text-anchor="middle" font-family="monospace">S3</text>
-  <circle cx="78" cy="27" r="2.5" fill="#FFD700"/>
-  <circle cx="122" cy="27" r="2.5" fill="#FFD700"/>
-  <rect x="18" y="25" width="12" height="70" rx="3" fill="#888" opacity="0.3"/>
-  <rect x="170" y="25" width="12" height="70" rx="3" fill="#888" opacity="0.3"/>
-  <rect x="85" y="100" width="32" height="12" rx="3" fill="#666" stroke="#555" stroke-width="1"/>
-  <rect x="88" y="100" width="26" height="12" rx="2" fill="#444"/>
-  <rect x="155" y="95" width="20" height="18" rx="3" fill="#888" stroke="#666" stroke-width="1"/>
-  <rect x="158" y="98" width="14" height="12" rx="2" fill="#666"/>
-  <rect x="25" y="95" width="20" height="18" rx="3" fill="#888" stroke="#666" stroke-width="1"/>
-  <text x="100" y="128" font-size="10" fill="{_c('text_muted')}" text-anchor="middle" font-family="sans-serif">ESP32-S3 DevKitC</text>
-</svg>"""
-
-
-def board_esp32c3(size: int = 180) -> str:
-    return f"""<svg width="{size}" height="{int(size * 0.7)}" viewBox="0 0 200 140">
-  <rect x="15" y="15" width="170" height="90" rx="8" fill="#1A4A3A" stroke="#0D3025" stroke-width="2"/>
-  <rect x="15" y="15" width="20" height="90" rx="8" fill="#0D3025" opacity="0.2"/>
-  <rect x="165" y="15" width="20" height="90" rx="8" fill="#0D3025" opacity="0.2"/>
-  <rect x="50" y="30" width="100" height="50" rx="4" fill="#2D6B55" stroke="#1A4A3A" stroke-width="1.5"/>
-  <rect x="65" y="35" width="70" height="40" rx="5" fill="#D0D0D0" stroke="#999" stroke-width="1.5"/>
-  <text x="100" y="60" font-size="9" fill="#333" text-anchor="middle" font-family="monospace">C3</text>
-  <circle cx="80" cy="28" r="2" fill="#FFD700"/>
-  <circle cx="120" cy="28" r="2" fill="#FFD700"/>
-  <rect x="22" y="30" width="12" height="60" rx="2" fill="#888" opacity="0.3"/>
-  <rect x="166" y="30" width="12" height="60" rx="2" fill="#888" opacity="0.3"/>
-  <rect x="85" y="95" width="30" height="10" rx="3" fill="#666" stroke="#555" stroke-width="1"/>
-  <text x="100" y="118" font-size="10" fill="{_c('text_muted')}" text-anchor="middle" font-family="sans-serif">ESP32-C3</text>
-</svg>"""
-
-
-def board_esp32s2(size: int = 180) -> str:
-    return f"""<svg width="{size}" height="{int(size * 0.72)}" viewBox="0 0 200 145">
-  <rect x="10" y="15" width="180" height="95" rx="4" fill="#4A1A1A" stroke="#300D0D" stroke-width="2"/>
-  <rect x="10" y="15" width="22" height="95" rx="4" fill="#300D0D" opacity="0.2"/>
-  <rect x="168" y="15" width="22" height="95" rx="4" fill="#300D0D" opacity="0.2"/>
-  <rect x="42" y="35" width="116" height="55" rx="4" fill="#6B2D2D" stroke="#4A1A1A" stroke-width="1.5"/>
-  <rect x="57" y="40" width="86" height="45" rx="5" fill="#D0D0D0" stroke="#999" stroke-width="1.5"/>
-  <text x="100" y="67" font-size="10" fill="#333" text-anchor="middle" font-family="monospace">S2</text>
-  <circle cx="76" cy="33" r="2.5" fill="#FFD700"/>
-  <circle cx="124" cy="33" r="2.5" fill="#FFD700"/>
-  <rect x="16" y="30" width="12" height="65" rx="2" fill="#888" opacity="0.3"/>
-  <rect x="172" y="30" width="12" height="65" rx="2" fill="#888" opacity="0.3"/>
-  <rect x="85" y="100" width="30" height="12" rx="3" fill="#666" stroke="#555" stroke-width="1"/>
-  <rect x="90" y="100" width="20" height="12" rx="2" fill="#444"/>
-  <rect x="40" y="12" width="12" height="8" rx="2" fill="#888"/>
-  <rect x="148" y="12" width="12" height="8" rx="2" fill="#888"/>
-  <text x="100" y="122" font-size="10" fill="{_c('text_muted')}" text-anchor="middle" font-family="sans-serif">ESP32-S2 Saola</text>
-</svg>"""
-
-
 def board_esp32c6(size: int = 180) -> str:
     return f"""<svg width="{size}" height="{int(size * 0.7)}" viewBox="0 0 200 140">
   <!-- PCB: deep navy, RISC-V C6 -->
@@ -3175,7 +3117,7 @@ class OtaWorker(QThread):
                     except Exception:
                         if attempt == 2:
                             break
-                        time.sleep(0.3)
+                        self.msleep(300)
 
                 if not ok:
                     self.failed.emit(
@@ -3203,13 +3145,16 @@ class OtaWorker(QThread):
             # Phase 4: Post-reboot heartbeat
             self.progress.emit(95, "Rebooting device...")
             reboot_ms = cr.get("rebooting_in_ms", 2000)
-            time.sleep(reboot_ms / 1000 + 1)
+            for _ in range(int(reboot_ms / 1000) + 2):
+                self.msleep(500)
+                if self.isInterruptionRequested():
+                    return
 
             pb_deadline = time.time() + POST_FLASH_HEARTBEAT_WINDOW
             while time.time() < pb_deadline:
                 try:
                     req = urllib.request.Request(
-                        f"http://{self.device.ip}:{self.device.port}/easyesp/alive"
+                        f"http://{self.device.ip}:{self.device.port}/espy/alive"
                     )
                     with urllib.request.urlopen(req, timeout=2) as r:
                         alive = json.loads(r.read())
@@ -3220,7 +3165,10 @@ class OtaWorker(QThread):
                             return
                 except Exception:
                     pass
-                time.sleep(2)
+                for _ in range(4):
+                    self.msleep(500)
+                    if self.isInterruptionRequested():
+                        return
 
             self.failed.emit(
                 "Device didn't respond after reboot. "
