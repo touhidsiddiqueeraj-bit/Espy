@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.egg-info/
-dist/
+# dist/ tracked for release distribution (split into <100MB parts)
 build/
 *.egg
 
