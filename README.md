@@ -12,9 +12,9 @@ Espy is a cross-platform desktop application designed to get as many people as p
 
 ### What's New
 
-- **Faster OTA** — Chunk size increased to 4 KB for quicker wireless uploads
 - **Smarter board detection** — Partial board name matching + fallback for unrecognized boards
 - **Cached mascot animations** — No more re-rendering Espy's moods on every resize
+- **Bug fixes** — OTA chunk size synchronized with firmware, partition table drift resolved, bundled partition CSV in build
 
 
 ## Quick Start
@@ -113,6 +113,25 @@ python main.py
 
 On first launch, Espy will automatically download `arduino-cli` and install the ESP32 Arduino core.
 
+### Pre-built Binary
+
+Pre-built Linux binaries are available in `dist/`. Since GitHub's file size limit is 100 MB, each archive is split into 50 MB parts. To reassemble:
+
+```bash
+# Combine split parts into the full binary
+cat dist/Espy.part* > dist/Espy
+chmod +x dist/Espy
+
+# Or combine the tarball
+cat dist/Espy.tar.gz.part* > dist/Espy.tar.gz
+tar xzf dist/Espy.tar.gz
+
+# Run
+./dist/Espy
+```
+
+> **Note:** On Linux, the PyInstaller output is an ELF binary named `Espy`. The `.exe` extension is only used for Windows builds.
+
 ---
 
 ## Development
@@ -122,7 +141,7 @@ On first launch, Espy will automatically download `arduino-cli` and install the 
 python main.py
 
 # Build with PyInstaller
-pyinstaller easyesp.spec
+pyinstaller espy.spec
 ```
 
 ---
